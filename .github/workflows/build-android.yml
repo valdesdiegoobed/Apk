@@ -32,7 +32,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: registro-compilacion
+          name: registro-compilacion-v1.2.0
           path: build.log
           if-no-files-found: error
           retention-days: 7
@@ -47,14 +47,14 @@ jobs:
         run: |
           test -s app/build/outputs/apk/debug/app-debug.apk
           mkdir -p apk-lista
-          cp app/build/outputs/apk/debug/app-debug.apk apk-lista/DV-Control-de-Tramites-v1.0.0.apk
-          ls -lh apk-lista/DV-Control-de-Tramites-v1.0.0.apk
+          cp app/build/outputs/apk/debug/app-debug.apk apk-lista/DV-Control-de-Tramites-v1.2.0.apk
+          ls -lh apk-lista/DV-Control-de-Tramites-v1.2.0.apk
 
       - name: Subir APK comprobada
         uses: actions/upload-artifact@v4
         with:
-          name: DV-Control-de-Tramites-v1.0.0
-          path: apk-lista/DV-Control-de-Tramites-v1.0.0.apk
+          name: DV-Control-de-Tramites-v1.2.0
+          path: apk-lista/DV-Control-de-Tramites-v1.2.0.apk
           if-no-files-found: error
           compression-level: 0
           retention-days: 7
