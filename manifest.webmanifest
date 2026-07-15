@@ -1,0 +1,19 @@
+{
+  "name": "Control de Expedientes Privados",
+  "short_name": "Expedientes",
+  "description": "Aplicación privada para administrar expedientes de clientes.",
+  "start_url": "/Apk/",
+  "scope": "/Apk/",
+  "display": "standalone",
+  "background_color": "#f4f6f8",
+  "theme_color": "#0f172a",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/Apk/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
