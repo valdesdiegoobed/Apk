@@ -63,6 +63,7 @@ public class MainActivity extends Activity {
                 super.onPageFinished(view, url);
                 view.evaluateJavascript(readAsset("android-enhancements.js"), null);
                 view.evaluateJavascript(readAsset("license.js"), null);
+                view.evaluateJavascript(readAsset("ui-v1-2.js"), null);
             }
             @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 Uri uri = request.getUrl();
