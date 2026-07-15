@@ -1,13 +1,88 @@
 <!doctype html>
 <html lang="es">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#0f172a" />
-    <title>Control de Expedientes</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0f172a" />
+  <title>Control de Expedientes</title>
+  <style>
+    :root{font-family:Arial,sans-serif;color:#172033;background:#f4f6f8}*{box-sizing:border-box}body{margin:0}.bar{background:#0f172a;color:white;padding:16px;display:flex;align-items:center;justify-content:space-between}.wrap{max-width:900px;margin:auto;padding:18px}.card{background:white;border-radius:14px;padding:18px;box-shadow:0 3px 16px #0002;margin-bottom:16px}.login{max-width:430px;margin:10vh auto}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px}input,select,textarea,button{font:inherit;width:100%;padding:12px;border-radius:9px;border:1px solid #c8ced8;margin-top:7px}button{background:#155eef;color:white;border:0;font-weight:700;cursor:pointer}.secondary{background:#fff;color:#172033;border:1px solid #aeb7c6}.danger{background:#b42318}.hidden{display:none!important}.error{background:#fee4e2;color:#912018;padding:11px;border-radius:9px;margin:10px 0}.notice{background:#fff4cc;color:#604b00;padding:11px;border-radius:9px;margin:10px 0}.item{border:1px solid #d8dde5;border-radius:12px;padding:14px;margin-top:10px}.row{display:flex;gap:10px;align-items:center}.row>*{flex:1}.small{font-size:.88rem;color:#667085}.title{font-size:1.35rem;font-weight:800}.spinner{width:42px;height:42px;border:5px solid #ddd;border-top-color:#155eef;border-radius:50%;animation:s 1s linear infinite;margin:25vh auto}@keyframes s{to{transform:rotate(360deg)}}
+  </style>
+</head>
+<body>
+  <div id="loading" class="spinner"></div>
+  <section id="login" class="wrap login hidden">
+    <div class="card">
+      <div class="title">Acceso privado</div>
+      <p class="small">Ingresa con el usuario creado en Firebase.</p>
+      <div id="loginError" class="error hidden"></div>
+      <input id="email" type="email" placeholder="Correo electrónico" autocomplete="email" />
+      <input id="password" type="password" placeholder="Contraseña" autocomplete="current-password" />
+      <button id="loginBtn">Iniciar sesión</button>
+      <div class="notice">No existe registro público. Usa datos ficticios durante las pruebas.</div>
+    </div>
+  </section>
+  <section id="app" class="hidden">
+    <header class="bar"><strong>Control de Expedientes</strong><button id="logoutBtn" class="secondary" style="width:auto;margin:0">Cerrar sesión</button></header>
+    <main class="wrap">
+      <div class="notice">Versión de prueba. Los datos básicos se guardan en Firestore. No cargues documentos reales.</div>
+      <div class="card">
+        <div class="title">Nuevo expediente ficticio</div>
+        <div class="grid">
+          <input id="nombre" placeholder="Nombre completo" />
+          <input id="curp" placeholder="CURP" maxlength="18" />
+          <input id="rfc" placeholder="RFC" maxlength="13" />
+          <input id="telefono" placeholder="Teléfono" />
+          <input id="fechaInicio" type="date" title="Fecha de inicio" />
+          <input id="fechaSolicitud" type="date" title="Fecha para crear solicitud" />
+          <input id="fechaCulminacion" type="date" title="Fecha de culminación" />
+          <select id="estado"><option>Activo</option><option>En revisión</option><option>Archivado</option></select>
+        </div>
+        <textarea id="notas" placeholder="Notas" rows="3"></textarea>
+        <button id="saveBtn">Guardar expediente</button>
+        <div id="saveError" class="error hidden"></div>
+      </div>
+      <div class="card">
+        <div class="title">Expedientes</div>
+        <input id="search" placeholder="Buscar por nombre, CURP, RFC o teléfono" />
+        <div id="list"><p class="small">Cargando…</p></div>
+      </div>
+    </main>
+  </section>
+<script type="module">
+  import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js';
+  import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js';
+  import { getFirestore, collection, addDoc, deleteDoc, doc, onSnapshot, serverTimestamp, query, orderBy } from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js';
+
+  const firebaseConfig={apiKey:'AIzaSyA_pvV6d-sr7OpeBdRuf1w5uhmXTa6EE9c',authDomain:'control-expedientes-privados.firebaseapp.com',projectId:'control-expedientes-privados',storageBucket:'control-expedientes-privados.firebasestorage.app',messagingSenderId:'939272933933',appId:'1:939272933933:web:c53508c545367c05f71ea4'};
+  const fb=initializeApp(firebaseConfig),auth=getAuth(fb),db=getFirestore(fb);
+  const $=id=>document.getElementById(id); let registros=[],unsubscribe=null;
+  const show=(id,yes)=>$(id).classList.toggle('hidden',!yes);
+  const text=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+
+  if('serviceWorker' in navigator){navigator.serviceWorker.getRegistrations().then(rs=>rs.forEach(r=>r.unregister()));caches.keys().then(keys=>keys.forEach(k=>caches.delete(k)));}
+
+  $('loginBtn').onclick=async()=>{show('loginError',false);try{await signInWithEmailAndPassword(auth,$('email').value.trim(),$('password').value)}catch(e){$('loginError').textContent=e.code==='auth/unauthorized-domain'?'Falta autorizar este dominio en Firebase Authentication.':'No fue posible iniciar sesión. Revisa el correo y la contraseña.';show('loginError',true)}};
+  $('logoutBtn').onclick=()=>signOut(auth);
+  $('password').onkeydown=e=>{if(e.key==='Enter')$('loginBtn').click()};
+
+  onAuthStateChanged(auth,user=>{
+    show('loading',false);show('login',!user);show('app',!!user);
+    if(unsubscribe){unsubscribe();unsubscribe=null}
+    if(user){
+      const ref=collection(db,'usuarios',user.uid,'expedientes');
+      unsubscribe=onSnapshot(query(ref,orderBy('creado','desc')),snap=>{registros=snap.docs.map(d=>({id:d.id,...d.data()}));render()},err=>{$('list').innerHTML='<div class="error">No fue posible leer Firestore. Revisa las reglas de seguridad.</div>'});
+    }
+  });
+
+  $('saveBtn').onclick=async()=>{
+    show('saveError',false);const nombre=$('nombre').value.trim();if(!nombre){$('saveError').textContent='Escribe un nombre ficticio.';show('saveError',true);return}
+    const u=auth.currentUser;if(!u)return;
+    try{await addDoc(collection(db,'usuarios',u.uid,'expedientes'),{nombre,curp:$('curp').value.trim().toUpperCase(),rfc:$('rfc').value.trim().toUpperCase(),telefono:$('telefono').value.trim(),fechaInicio:$('fechaInicio').value,fechaSolicitud:$('fechaSolicitud').value,fechaCulminacion:$('fechaCulminacion').value,estado:$('estado').value,notas:$('notas').value.trim(),creado:serverTimestamp()});['nombre','curp','rfc','telefono','fechaInicio','fechaSolicitud','fechaCulminacion','notas'].forEach(x=>$(x).value='')}catch(e){$('saveError').textContent='No se pudo guardar. Revisa tu conexión y las reglas de Firestore.';show('saveError',true)}
+  };
+  $('search').oninput=render;
+  window.borrar=async id=>{if(confirm('¿Eliminar este expediente ficticio?'))await deleteDoc(doc(db,'usuarios',auth.currentUser.uid,'expedientes',id))};
+  function render(){const q=$('search').value.toLowerCase();const xs=registros.filter(r=>[r.nombre,r.curp,r.rfc,r.telefono].some(v=>String(v||'').toLowerCase().includes(q)));$('list').innerHTML=xs.length?xs.map(r=>`<div class="item"><div class="row"><div><strong>${text(r.nombre)}</strong><div class="small">${text(r.curp||'CURP pendiente')} · ${text(r.estado||'')}</div><div class="small">Inicio: ${text(r.fechaInicio||'—')} | Solicitud: ${text(r.fechaSolicitud||'—')} | Fin: ${text(r.fechaCulminacion||'—')}</div></div><button class="danger" style="max-width:90px" onclick="borrar('${r.id}')">Eliminar</button></div></div>`).join(''):'<p class="small">No hay expedientes.</p>'}
+</script>
+</body>
 </html>
