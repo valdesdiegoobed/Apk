@@ -24,7 +24,24 @@ jobs:
           gradle-version: '8.9'
 
       - name: Compilar APK instalable
-        run: gradle :app:assembleDebug --stacktrace
+        id: build_apk
+        continue-on-error: true
+        run: gradle :app:assembleDebug --stacktrace > build.log 2>&1
+
+      - name: Subir registro de compilación
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: registro-compilacion
+          path: build.log
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Detener si falló la compilación
+        if: steps.build_apk.outcome != 'success'
+        run: |
+          tail -n 120 build.log
+          exit 1
 
       - name: Verificar y nombrar APK
         run: |
