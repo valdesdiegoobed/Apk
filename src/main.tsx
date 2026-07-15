@@ -1,19 +1,33 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom';
+import { createHashRouter, Navigate, RouterProvider } from 'react-router-dom';
 import { App } from './App';
 import './styles.css';
 
-const router = createBrowserRouter([
-  { path: '/', element: <App />, children: [
-    { index: true, element: <Navigate to="expedientes" replace /> },
-    { path: 'expedientes', lazy: () => import('./pages/Expedientes') },
-    { path: 'expedientes/:id', lazy: () => import('./pages/DetalleExpediente') },
-    { path: 'configuracion', lazy: () => import('./pages/Configuracion') },
-  ] },
-], {
-  basename: import.meta.env.BASE_URL,
-});
+if ('serviceWorker' in navigator) {
+  void navigator.serviceWorker.getRegistrations().then((registrations) => {
+    registrations.forEach((registration) => void registration.unregister());
+  });
+}
+
+if ('caches' in window) {
+  void caches.keys().then((keys) => {
+    keys.forEach((key) => void caches.delete(key));
+  });
+}
+
+const router = createHashRouter([
+  {
+    path: '/',
+    element: <App />,
+    children: [
+      { index: true, element: <Navigate to="expedientes" replace /> },
+      { path: 'expedientes', lazy: () => import('./pages/Expedientes') },
+      { path: 'expedientes/:id', lazy: () => import('./pages/DetalleExpediente') },
+      { path: 'configuracion', lazy: () => import('./pages/Configuracion') },
+    ],
+  },
+]);
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
