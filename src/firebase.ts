@@ -1,19 +1,16 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
-import { getStorage } from 'firebase/storage';
 
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  apiKey: 'AIzaSyA_pvV6d-sr7OpeBdRuf1w5uhmXTa6EE9c',
+  authDomain: 'control-expedientes-privados.firebaseapp.com',
+  projectId: 'control-expedientes-privados',
+  storageBucket: 'control-expedientes-privados.firebasestorage.app',
+  messagingSenderId: '939272933933',
+  appId: '1:939272933933:web:c53508c545367c05f71ea4',
 };
 
-export const firebaseReady = Object.values(firebaseConfig).every(Boolean);
 export const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
-export const storage = getStorage(app);
