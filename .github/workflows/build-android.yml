@@ -1,7 +1,9 @@
-name: Compilar APK Android
+name: Verificar APK Android
 
 on:
   workflow_dispatch:
+  pull_request:
+    branches: [ main ]
   push:
     branches: [ main ]
     paths:
@@ -11,13 +13,6 @@ on:
       - 'settings.gradle'
       - 'gradle.properties'
       - '.github/workflows/build-android.yml'
-
-permissions:
-  contents: write
-
-concurrency:
-  group: android-apk-main
-  cancel-in-progress: true
 
 jobs:
   build:
@@ -44,27 +39,14 @@ jobs:
         run: |
           test -s app/build/outputs/apk/debug/app-debug.apk
           mkdir -p apk-lista
-          cp app/build/outputs/apk/debug/app-debug.apk apk-lista/DV-Control-de-Tramites-v1.0.0.apk
-          ls -lh apk-lista/DV-Control-de-Tramites-v1.0.0.apk
+          cp app/build/outputs/apk/debug/app-debug.apk apk-lista/DV-Control-de-Tramites-v1.2.0.apk
+          ls -lh apk-lista/DV-Control-de-Tramites-v1.2.0.apk
 
-      - name: Subir copia de seguridad del instalador
+      - name: Subir APK comprobada
         uses: actions/upload-artifact@v4
         with:
-          name: INSTALADOR-DV-Control-de-Tramites
-          path: apk-lista/DV-Control-de-Tramites-v1.0.0.apk
+          name: DV-Control-de-Tramites-v1.2.0
+          path: apk-lista/DV-Control-de-Tramites-v1.2.0.apk
           if-no-files-found: error
           compression-level: 0
-          retention-days: 90
-
-      - name: Publicar APK con enlace directo
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          if gh release view v1.0.0 >/dev/null 2>&1; then
-            gh release upload v1.0.0 apk-lista/DV-Control-de-Tramites-v1.0.0.apk --clobber
-          else
-            gh release create v1.0.0 apk-lista/DV-Control-de-Tramites-v1.0.0.apk \
-              --target "$GITHUB_SHA" \
-              --title "DV Control de Trámites v1.0.0" \
-              --notes "Aplicación Android instalable y de funcionamiento local, desarrollada por Diego Valdes Guerrero."
-          fi
+          retention-days: 7
