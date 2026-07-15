@@ -1,23 +1,9 @@
-name: Compilar APK Android
+name: Verificar APK Android
 
 on:
-  workflow_dispatch:
-  push:
+  pull_request:
     branches: [ main ]
-    paths:
-      - 'index.html'
-      - 'app/**'
-      - 'build.gradle'
-      - 'settings.gradle'
-      - 'gradle.properties'
-      - '.github/workflows/build-android.yml'
-
-permissions:
-  contents: write
-
-concurrency:
-  group: android-apk-main
-  cancel-in-progress: true
+  workflow_dispatch:
 
 jobs:
   build:
@@ -38,7 +24,24 @@ jobs:
           gradle-version: '8.9'
 
       - name: Compilar APK instalable
-        run: gradle :app:assembleDebug --stacktrace
+        id: build_apk
+        continue-on-error: true
+        run: gradle :app:assembleDebug --stacktrace > build.log 2>&1
+
+      - name: Subir registro de compilación
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: registro-compilacion
+          path: build.log
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Detener si falló la compilación
+        if: steps.build_apk.outcome != 'success'
+        run: |
+          tail -n 120 build.log
+          exit 1
 
       - name: Verificar y nombrar APK
         run: |
@@ -47,24 +50,11 @@ jobs:
           cp app/build/outputs/apk/debug/app-debug.apk apk-lista/DV-Control-de-Tramites-v1.0.0.apk
           ls -lh apk-lista/DV-Control-de-Tramites-v1.0.0.apk
 
-      - name: Subir copia de seguridad del instalador
+      - name: Subir APK comprobada
         uses: actions/upload-artifact@v4
         with:
-          name: INSTALADOR-DV-Control-de-Tramites
+          name: DV-Control-de-Tramites-v1.0.0
           path: apk-lista/DV-Control-de-Tramites-v1.0.0.apk
           if-no-files-found: error
           compression-level: 0
-          retention-days: 90
-
-      - name: Publicar APK con enlace directo
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          if gh release view v1.0.0 >/dev/null 2>&1; then
-            gh release upload v1.0.0 apk-lista/DV-Control-de-Tramites-v1.0.0.apk --clobber
-          else
-            gh release create v1.0.0 apk-lista/DV-Control-de-Tramites-v1.0.0.apk \
-              --target "$GITHUB_SHA" \
-              --title "DV Control de Trámites v1.0.0" \
-              --notes "Aplicación Android instalable y de funcionamiento local, desarrollada por Diego Valdes Guerrero."
-          fi
+          retention-days: 7
