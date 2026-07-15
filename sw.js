@@ -1,4 +1,4 @@
-const CACHE = 'expedientes-shell-v1';
+const CACHE = 'expedientes-shell-v2';
 const APP_SHELL = ['/Apk/', '/Apk/manifest.webmanifest', '/Apk/icon.svg'];
 
 self.addEventListener('install', (event) => {
