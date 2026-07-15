@@ -4,6 +4,12 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#0f172a" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Expedientes" />
+  <link rel="manifest" href="/Apk/manifest.webmanifest" />
+  <link rel="icon" href="/Apk/icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="/Apk/icon.svg" />
   <title>Control de Expedientes</title>
   <style>
     :root{font-family:Arial,sans-serif;color:#172033;background:#f4f6f8}*{box-sizing:border-box}body{margin:0}.bar{background:#0f172a;color:white;padding:16px;display:flex;align-items:center;justify-content:space-between}.wrap{max-width:900px;margin:auto;padding:18px}.card{background:white;border-radius:14px;padding:18px;box-shadow:0 3px 16px #0002;margin-bottom:16px}.login{max-width:430px;margin:10vh auto}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px}input,select,textarea,button{font:inherit;width:100%;padding:12px;border-radius:9px;border:1px solid #c8ced8;margin-top:7px}button{background:#155eef;color:white;border:0;font-weight:700;cursor:pointer}.secondary{background:#fff;color:#172033;border:1px solid #aeb7c6}.danger{background:#b42318}.hidden{display:none!important}.error{background:#fee4e2;color:#912018;padding:11px;border-radius:9px;margin:10px 0}.notice{background:#fff4cc;color:#604b00;padding:11px;border-radius:9px;margin:10px 0}.item{border:1px solid #d8dde5;border-radius:12px;padding:14px;margin-top:10px}.row{display:flex;gap:10px;align-items:center}.row>*{flex:1}.small{font-size:.88rem;color:#667085}.title{font-size:1.35rem;font-weight:800}.spinner{width:42px;height:42px;border:5px solid #ddd;border-top-color:#155eef;border-radius:50%;animation:s 1s linear infinite;margin:25vh auto}@keyframes s{to{transform:rotate(360deg)}}
@@ -60,7 +66,7 @@
   const show=(id,yes)=>$(id).classList.toggle('hidden',!yes);
   const text=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 
-  if('serviceWorker' in navigator){navigator.serviceWorker.getRegistrations().then(rs=>rs.forEach(r=>r.unregister()));caches.keys().then(keys=>keys.forEach(k=>caches.delete(k)));}
+  if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('/Apk/sw.js').catch(()=>{}));}
 
   $('loginBtn').onclick=async()=>{show('loginError',false);try{await signInWithEmailAndPassword(auth,$('email').value.trim(),$('password').value)}catch(e){$('loginError').textContent=e.code==='auth/unauthorized-domain'?'Falta autorizar este dominio en Firebase Authentication.':'No fue posible iniciar sesión. Revisa el correo y la contraseña.';show('loginError',true)}};
   $('logoutBtn').onclick=()=>signOut(auth);
