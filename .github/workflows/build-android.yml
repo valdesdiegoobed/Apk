@@ -12,6 +12,9 @@ on:
       - 'gradle.properties'
       - '.github/workflows/build-android.yml'
 
+permissions:
+  contents: write
+
 concurrency:
   group: android-apk-main
   cancel-in-progress: true
@@ -44,7 +47,7 @@ jobs:
           cp app/build/outputs/apk/debug/app-debug.apk apk-lista/DV-Control-de-Tramites-v1.0.0.apk
           ls -lh apk-lista/DV-Control-de-Tramites-v1.0.0.apk
 
-      - name: Subir APK para descarga
+      - name: Subir copia de seguridad del instalador
         uses: actions/upload-artifact@v4
         with:
           name: INSTALADOR-DV-Control-de-Tramites
@@ -52,3 +55,16 @@ jobs:
           if-no-files-found: error
           compression-level: 0
           retention-days: 90
+
+      - name: Publicar APK con enlace directo
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view v1.0.0 >/dev/null 2>&1; then
+            gh release upload v1.0.0 apk-lista/DV-Control-de-Tramites-v1.0.0.apk --clobber
+          else
+            gh release create v1.0.0 apk-lista/DV-Control-de-Tramites-v1.0.0.apk \
+              --target "$GITHUB_SHA" \
+              --title "DV Control de Trámites v1.0.0" \
+              --notes "Aplicación Android instalable y de funcionamiento local, desarrollada por Diego Valdes Guerrero."
+          fi
