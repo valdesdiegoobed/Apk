@@ -30,7 +30,6 @@
 <div class="field field-card"><label><span class="field-icon">🚩</span><span>Fecha de inicio del trámite</span></label><input id="fechaInicio" type="date"></div>
 <div class="field field-card"><label><span class="field-icon">⏰</span><span>Fecha para realizar la solicitud</span></label><input id="fechaSolicitud" type="date" readonly><small>Se calcula automáticamente 46 días naturales después.</small></div>
 </div>
-<div class="field field-card" style="margin-top:12px"><label><span class="field-icon">🗒️</span><span>Notas del expediente</span></label><textarea id="notas" rows="3" maxlength="100" placeholder="Máximo 100 caracteres"></textarea><small id="contadorNotas">0 de 100 caracteres</small></div>
 <div class="section">📁 Documentos</div>
 <div class="grid">
 <div class="field doc-field"><label class="doc-label"><span class="doc-icon">🪪</span><span>1. Identificación oficial, parte frontal</span></label><input id="docIdFrontal" type="file" accept="image/*,.pdf"></div>
@@ -40,6 +39,8 @@
 <div class="field doc-field"><label class="doc-label"><span class="doc-icon">📄</span><span>5. Constancia de situación fiscal</span></label><input id="docFiscal" type="file" accept="image/*,.pdf"></div>
 </div>
 <div id="existingDocs"></div>
+<div class="section">🗒️ Notas</div>
+<div class="field field-card"><label><span class="field-icon">✍️</span><span>Notas del expediente</span></label><textarea id="notas" rows="3" maxlength="100" placeholder="Máximo 100 caracteres"></textarea><small id="contadorNotas">0 de 100 caracteres</small></div>
 <div class="actions"><button id="saveBtn">💾 Guardar expediente</button><button id="cancelBtn" class="secondary hidden">↩️ Cancelar edición</button></div>
 <div id="saveError" class="error hidden"></div><div id="saveOk" class="ok hidden"></div>
 </div>
