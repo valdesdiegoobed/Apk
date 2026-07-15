@@ -1,0 +1,41 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.diegovaldes.dvcontroltramites'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'com.diegovaldes.dvcontroltramites'
+        minSdk 24
+        targetSdk 35
+        versionCode 1
+        versionName '1.0.0'
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+def syncWebAssets = tasks.register('syncWebAssets', Copy) {
+    from(rootProject.file('index.html'))
+    into(layout.projectDirectory.dir('src/main/assets'))
+}
+
+tasks.named('preBuild').configure {
+    dependsOn(syncWebAssets)
+}
+
+dependencies {
+    implementation 'androidx.webkit:webkit:1.12.1'
+}
