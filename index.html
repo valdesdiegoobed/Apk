@@ -1,100 +1,79 @@
 <!doctype html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="theme-color" content="#0f172a" />
-  <meta name="mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-title" content="Expedientes" />
-  <link rel="manifest" href="/Apk/manifest.webmanifest" />
-  <link rel="icon" href="/Apk/icon.svg" type="image/svg+xml" />
-  <link rel="apple-touch-icon" href="/Apk/icon.svg" />
-  <title>Control de Expedientes</title>
-  <style>
-    :root{font-family:Arial,sans-serif;color:#172033;background:#f4f6f8}*{box-sizing:border-box}body{margin:0}.bar{background:#0f172a;color:white;padding:16px;display:flex;align-items:center;justify-content:space-between;gap:10px}.wrap{max-width:950px;margin:auto;padding:18px}.card{background:white;border-radius:14px;padding:18px;box-shadow:0 3px 16px #0002;margin-bottom:16px}.login{max-width:430px;margin:10vh auto}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px}input,select,textarea,button{font:inherit;width:100%;padding:12px;border-radius:9px;border:1px solid #c8ced8;margin-top:7px}button{background:#155eef;color:white;border:0;font-weight:700;cursor:pointer}.secondary{background:#fff;color:#172033;border:1px solid #aeb7c6}.danger{background:#b42318}.success{background:#027a48}.hidden{display:none!important}.error{background:#fee4e2;color:#912018;padding:11px;border-radius:9px;margin:10px 0}.ok{background:#dcfae6;color:#05603a;padding:11px;border-radius:9px;margin:10px 0}.item{border:1px solid #d8dde5;border-radius:12px;padding:14px;margin-top:10px}.row{display:flex;gap:10px;align-items:center}.row>*{flex:1}.actions{display:flex;gap:8px;flex-wrap:wrap}.actions button{width:auto;min-width:90px}.small{font-size:.88rem;color:#667085}.title{font-size:1.35rem;font-weight:800}.subtitle{font-size:1rem;font-weight:700;margin-top:8px}.spinner{width:42px;height:42px;border:5px solid #ddd;border-top-color:#155eef;border-radius:50%;animation:s 1s linear infinite;margin:25vh auto}@keyframes s{to{transform:rotate(360deg)}}@media(max-width:650px){.row{align-items:flex-start;flex-direction:column}.actions{width:100%}.actions button{flex:1}.bar{align-items:flex-start}}
-  </style>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#0f172a">
+<meta name="mobile-web-app-capable" content="yes"><link rel="manifest" href="/Apk/manifest.webmanifest"><link rel="icon" href="/Apk/icon.svg"><title>Control de Expedientes</title>
+<style>
+:root{font-family:Arial,sans-serif;color:#172033;background:#f4f6f8}*{box-sizing:border-box}body{margin:0}.hidden{display:none!important}.bar{background:#0f172a;color:#fff;padding:15px;display:flex;justify-content:space-between;gap:12px;align-items:center}.wrap{max-width:980px;margin:auto;padding:16px}.card{background:#fff;border-radius:16px;padding:18px;box-shadow:0 4px 18px #0002;margin-bottom:16px}.login{max-width:430px;margin:10vh auto}.title{font-size:1.45rem;font-weight:800}.section{font-size:1.08rem;font-weight:800;margin:20px 0 8px;border-bottom:1px solid #e3e7ee;padding-bottom:7px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}.field label{display:block;font-weight:700;font-size:.9rem;margin-bottom:3px}.field small,.small{font-size:.84rem;color:#667085}input,select,textarea,button{font:inherit;width:100%;padding:12px;border-radius:10px;border:1px solid #c8ced8;margin-top:5px}button{background:#155eef;color:#fff;border:0;font-weight:750;cursor:pointer}.secondary{background:#fff;color:#172033;border:1px solid #aeb7c6}.danger{background:#b42318}.success{background:#027a48}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.actions button{width:auto;min-width:105px}.error,.ok,.info{padding:11px;border-radius:9px;margin:10px 0}.error{background:#fee4e2;color:#912018}.ok{background:#dcfae6;color:#05603a}.info{background:#eaf2ff;color:#1849a9}.item{border:1px solid #d8dde5;border-radius:13px;padding:14px;margin-top:12px}.row{display:flex;gap:12px;align-items:flex-start}.row>div:first-child{flex:1}.thumb{width:82px;height:96px;object-fit:cover;border-radius:10px;border:1px solid #ccd3dd;background:#eef1f5}.preview{width:120px;height:145px;object-fit:cover;border-radius:12px;border:1px solid #ccd3dd;background:#eef1f5;display:block;margin-top:8px}.docs a{display:inline-block;margin:4px 8px 4px 0}.doc-chip{display:flex;gap:8px;align-items:center;border:1px solid #d8dde5;border-radius:9px;padding:8px;margin-top:7px}.doc-chip a{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.doc-chip button{width:auto;padding:7px 10px;margin:0}.spinner{width:42px;height:42px;border:5px solid #ddd;border-top-color:#155eef;border-radius:50%;animation:s 1s linear infinite;margin:25vh auto}@keyframes s{to{transform:rotate(360deg)}}
+@media(max-width:650px){.bar{align-items:flex-start}.row{flex-wrap:wrap}.thumb{width:72px;height:86px}.actions{width:100%}.actions button{flex:1}.wrap{padding:12px}.card{padding:16px}}
+</style>
 </head>
 <body>
-  <div id="loading" class="spinner"></div>
-  <section id="login" class="wrap login hidden">
-    <div class="card">
-      <div class="title">Acceso privado</div>
-      <p class="small">Ingresa con tu correo y contraseña autorizados.</p>
-      <div id="loginError" class="error hidden"></div>
-      <input id="email" type="email" placeholder="Correo electrónico" autocomplete="email" />
-      <input id="password" type="password" placeholder="Contraseña" autocomplete="current-password" />
-      <button id="loginBtn">Iniciar sesión</button>
-    </div>
-  </section>
-  <section id="app" class="hidden">
-    <header class="bar"><div><strong>Control de Expedientes</strong><div id="userEmail" class="small" style="color:#cbd5e1"></div></div><button id="logoutBtn" class="secondary" style="width:auto;margin:0">Cerrar sesión</button></header>
-    <main class="wrap">
-      <div class="card">
-        <div id="formTitle" class="title">Nuevo expediente</div>
-        <p class="small">Los datos se guardan en tu cuenta privada de Firebase.</p>
-        <div class="grid">
-          <input id="nombre" placeholder="Nombre completo" />
-          <input id="curp" placeholder="CURP" maxlength="18" />
-          <input id="rfc" placeholder="RFC" maxlength="13" />
-          <input id="telefono" placeholder="Teléfono" inputmode="tel" />
-          <input id="fechaNacimiento" type="date" title="Fecha de nacimiento" />
-          <input id="fechaInicio" type="date" title="Fecha de inicio" />
-          <input id="fechaSolicitud" type="date" title="Fecha para crear solicitud" />
-          <input id="fechaCulminacion" type="date" title="Fecha de culminación" />
-          <select id="estado"><option>Activo</option><option>En revisión</option><option>Solicitud realizada</option><option>Terminado</option><option>Archivado</option></select>
-        </div>
-        <textarea id="notas" placeholder="Notas del expediente" rows="3"></textarea>
-        <div class="actions">
-          <button id="saveBtn">Guardar expediente</button>
-          <button id="cancelBtn" class="secondary hidden">Cancelar edición</button>
-        </div>
-        <div id="saveError" class="error hidden"></div>
-        <div id="saveOk" class="ok hidden"></div>
-      </div>
-      <div class="card">
-        <div class="title">Expedientes guardados</div>
-        <input id="search" placeholder="Buscar por nombre, CURP, RFC o teléfono" />
-        <div id="list"><p class="small">Cargando…</p></div>
-      </div>
-    </main>
-  </section>
+<div id="loading" class="spinner"></div>
+<section id="login" class="wrap login hidden"><div class="card"><div class="title">Acceso privado</div><p class="small">Ingresa con tu cuenta autorizada.</p><div id="loginError" class="error hidden"></div><input id="email" type="email" placeholder="Correo electrónico" autocomplete="email"><input id="password" type="password" placeholder="Contraseña" autocomplete="current-password"><button id="loginBtn">Iniciar sesión</button></div></section>
+<section id="app" class="hidden"><header class="bar"><div><strong>Control de Expedientes</strong><div id="userEmail" class="small" style="color:#cbd5e1"></div></div><button id="logoutBtn" class="secondary" style="width:auto;margin:0">Cerrar sesión</button></header>
+<main class="wrap">
+<div class="card">
+<div id="formTitle" class="title">Nuevo expediente</div>
+<div class="section">Fotografía del cliente</div>
+<div class="grid"><div class="field"><label>Seleccionar o tomar fotografía</label><input id="foto" type="file" accept="image/*" capture="environment"><small>JPG, PNG o foto tomada con la cámara.</small></div><div><img id="fotoPreview" class="preview hidden" alt="Fotografía del cliente"></div></div>
+<div class="section">Datos personales</div>
+<div class="grid">
+<div class="field"><label>Nombre completo *</label><input id="nombre" autocomplete="name"></div>
+<div class="field"><label>CURP</label><input id="curp" maxlength="18" autocapitalize="characters"></div>
+<div class="field"><label>RFC</label><input id="rfc" maxlength="13" autocapitalize="characters"></div>
+<div class="field"><label>Teléfono</label><input id="telefono" inputmode="tel"></div>
+<div class="field"><label>Fecha de nacimiento</label><input id="fechaNacimiento" type="date"></div>
+</div>
+<div class="section">Información del trámite</div>
+<div class="grid">
+<div class="field"><label>Fecha de inicio del trámite</label><input id="fechaInicio" type="date"></div>
+<div class="field"><label>Fecha para realizar la solicitud</label><input id="fechaSolicitud" type="date"></div>
+<div class="field"><label>Fecha estimada de culminación</label><input id="fechaCulminacion" type="date"></div>
+<div class="field"><label>Estado del trámite</label><select id="estado"><option>Activo</option><option>En revisión</option><option>Solicitud realizada</option><option>Terminado</option><option>Archivado</option><option>Cancelado</option></select></div>
+</div>
+<div class="field"><label>Notas del expediente</label><textarea id="notas" rows="3"></textarea></div>
+<div class="section">Documentos</div>
+<div class="grid">
+<div class="field"><label>Constancia de situación fiscal</label><input id="docFiscal" type="file" accept="image/*,.pdf,application/pdf"></div>
+<div class="field"><label>Documento CURP</label><input id="docCurp" type="file" accept="image/*,.pdf,application/pdf"></div>
+<div class="field"><label>Identificación oficial</label><input id="docId" type="file" accept="image/*,.pdf,application/pdf"></div>
+<div class="field"><label>Estado de cuenta</label><input id="docCuenta" type="file" accept="image/*,.pdf,application/pdf"></div>
+<div class="field"><label>Otros documentos</label><input id="docOtros" type="file" accept="image/*,.pdf,application/pdf" multiple></div>
+</div>
+<div id="existingDocs" class="docs"></div>
+<div class="actions"><button id="saveBtn">Guardar expediente</button><button id="cancelBtn" class="secondary hidden">Cancelar edición</button></div>
+<div id="progress" class="info hidden"></div><div id="saveError" class="error hidden"></div><div id="saveOk" class="ok hidden"></div>
+</div>
+<div class="card"><div class="title">Expedientes guardados</div><input id="search" placeholder="Buscar por nombre, CURP, RFC o teléfono"><div id="list"><p class="small">Cargando…</p></div></div>
+</main></section>
 <script type="module">
-  import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js';
-  import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js';
-  import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, serverTimestamp, query, orderBy } from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js';
-
-  const firebaseConfig={apiKey:'AIzaSyA_pvV6d-sr7OpeBdRuf1w5uhmXTa6EE9c',authDomain:'control-expedientes-privados.firebaseapp.com',projectId:'control-expedientes-privados',storageBucket:'control-expedientes-privados.firebasestorage.app',messagingSenderId:'939272933933',appId:'1:939272933933:web:c53508c545367c05f71ea4'};
-  const fb=initializeApp(firebaseConfig),auth=getAuth(fb),db=getFirestore(fb);
-  const $=id=>document.getElementById(id); let registros=[],unsubscribe=null,editandoId=null;
-  const show=(id,yes)=>$(id).classList.toggle('hidden',!yes);
-  const text=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-  const campos=['nombre','curp','rfc','telefono','fechaNacimiento','fechaInicio','fechaSolicitud','fechaCulminacion','notas'];
-
-  if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('/Apk/sw.js').catch(()=>{}));}
-
-  $('loginBtn').onclick=async()=>{show('loginError',false);try{await signInWithEmailAndPassword(auth,$('email').value.trim(),$('password').value)}catch(e){$('loginError').textContent=e.code==='auth/unauthorized-domain'?'Falta autorizar este dominio en Firebase Authentication.':'No fue posible iniciar sesión. Revisa el correo y la contraseña.';show('loginError',true)}};
-  $('logoutBtn').onclick=()=>signOut(auth);
-  $('password').onkeydown=e=>{if(e.key==='Enter')$('loginBtn').click()};
-
-  onAuthStateChanged(auth,user=>{
-    show('loading',false);show('login',!user);show('app',!!user);$('userEmail').textContent=user?.email||'';
-    if(unsubscribe){unsubscribe();unsubscribe=null}
-    if(user){const ref=collection(db,'usuarios',user.uid,'expedientes');unsubscribe=onSnapshot(query(ref,orderBy('creado','desc')),snap=>{registros=snap.docs.map(d=>({id:d.id,...d.data()}));render()},()=>{$('list').innerHTML='<div class="error">No fue posible leer Firestore. Revisa las reglas de seguridad.</div>'})}
-  });
-
-  function datosFormulario(){return{nombre:$('nombre').value.trim(),curp:$('curp').value.trim().toUpperCase(),rfc:$('rfc').value.trim().toUpperCase(),telefono:$('telefono').value.trim(),fechaNacimiento:$('fechaNacimiento').value,fechaInicio:$('fechaInicio').value,fechaSolicitud:$('fechaSolicitud').value,fechaCulminacion:$('fechaCulminacion').value,estado:$('estado').value,notas:$('notas').value.trim(),actualizado:serverTimestamp()}}
-  function limpiar(){campos.forEach(x=>$(x).value='');$('estado').value='Activo';editandoId=null;$('formTitle').textContent='Nuevo expediente';$('saveBtn').textContent='Guardar expediente';show('cancelBtn',false)}
-
-  $('saveBtn').onclick=async()=>{
-    show('saveError',false);show('saveOk',false);const data=datosFormulario();if(!data.nombre){$('saveError').textContent='Escribe el nombre completo.';show('saveError',true);return}const u=auth.currentUser;if(!u)return;
-    try{if(editandoId){await updateDoc(doc(db,'usuarios',u.uid,'expedientes',editandoId),data);$('saveOk').textContent='Expediente actualizado correctamente.'}else{await addDoc(collection(db,'usuarios',u.uid,'expedientes'),{...data,creado:serverTimestamp()});$('saveOk').textContent='Expediente guardado correctamente.'}show('saveOk',true);limpiar();setTimeout(()=>show('saveOk',false),3000)}catch(e){$('saveError').textContent='No se pudo guardar. Revisa tu conexión y las reglas de Firestore.';show('saveError',true)}
-  };
-  $('cancelBtn').onclick=limpiar;
-  $('search').oninput=render;
-  window.editar=id=>{const r=registros.find(x=>x.id===id);if(!r)return;editandoId=id;campos.forEach(x=>$(x).value=r[x]||'');$('estado').value=r.estado||'Activo';$('formTitle').textContent='Editar expediente';$('saveBtn').textContent='Guardar cambios';show('cancelBtn',true);window.scrollTo({top:0,behavior:'smooth'})};
-  window.borrar=async id=>{if(confirm('¿Eliminar este expediente de forma permanente?'))await deleteDoc(doc(db,'usuarios',auth.currentUser.uid,'expedientes',id))};
-  function render(){const q=$('search').value.toLowerCase();const xs=registros.filter(r=>[r.nombre,r.curp,r.rfc,r.telefono].some(v=>String(v||'').toLowerCase().includes(q)));$('list').innerHTML=xs.length?xs.map(r=>`<div class="item"><div class="row"><div><strong>${text(r.nombre)}</strong><div class="small">${text(r.curp||'CURP pendiente')} · ${text(r.rfc||'RFC pendiente')} · ${text(r.estado||'')}</div><div class="small">Teléfono: ${text(r.telefono||'—')}</div><div class="small">Inicio: ${text(r.fechaInicio||'—')} | Solicitud: ${text(r.fechaSolicitud||'—')} | Fin: ${text(r.fechaCulminacion||'—')}</div>${r.notas?`<div class="small">Notas: ${text(r.notas)}</div>`:''}</div><div class="actions"><button class="success" onclick="editar('${r.id}')">Editar</button><button class="danger" onclick="borrar('${r.id}')">Eliminar</button></div></div></div>`).join(''):'<p class="small">No hay expedientes guardados.</p>'}
+import{initializeApp}from'https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js';
+import{getAuth,onAuthStateChanged,signInWithEmailAndPassword,signOut}from'https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js';
+import{getFirestore,collection,addDoc,updateDoc,deleteDoc,doc,onSnapshot,serverTimestamp,query,orderBy}from'https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js';
+import{getStorage,ref as sref,uploadBytes,getDownloadURL,deleteObject}from'https://www.gstatic.com/firebasejs/11.10.0/firebase-storage.js';
+const firebaseConfig={apiKey:'AIzaSyA_pvV6d-sr7OpeBdRuf1w5uhmXTa6EE9c',authDomain:'control-expedientes-privados.firebaseapp.com',projectId:'control-expedientes-privados',storageBucket:'control-expedientes-privados.firebasestorage.app',messagingSenderId:'939272933933',appId:'1:939272933933:web:c53508c545367c05f71ea4'};
+const fb=initializeApp(firebaseConfig),auth=getAuth(fb),db=getFirestore(fb),storage=getStorage(fb),$=id=>document.getElementById(id);
+let registros=[],unsubscribe=null,editandoId=null,fotoActual=null,docsActuales=[];
+const show=(id,v)=>$(id).classList.toggle('hidden',!v),text=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+const campos=['nombre','curp','rfc','telefono','fechaNacimiento','fechaInicio','fechaSolicitud','fechaCulminacion','notas'];
+const fileInputs=['foto','docFiscal','docCurp','docId','docCuenta','docOtros'];
+if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('/Apk/sw.js').catch(()=>{}));
+$('loginBtn').onclick=async()=>{show('loginError',false);try{await signInWithEmailAndPassword(auth,$('email').value.trim(),$('password').value)}catch(e){$('loginError').textContent='No fue posible iniciar sesión. Revisa el correo y la contraseña.';show('loginError',true)}};
+$('logoutBtn').onclick=()=>signOut(auth);$('password').onkeydown=e=>{if(e.key==='Enter')$('loginBtn').click()};
+$('foto').onchange=()=>{const f=$('foto').files[0];if(f){$('fotoPreview').src=URL.createObjectURL(f);show('fotoPreview',true)}};
+onAuthStateChanged(auth,user=>{show('loading',false);show('login',!user);show('app',!!user);$('userEmail').textContent=user?.email||'';if(unsubscribe){unsubscribe();unsubscribe=null}if(user){const c=collection(db,'usuarios',user.uid,'expedientes');unsubscribe=onSnapshot(query(c,orderBy('creado','desc')),s=>{registros=s.docs.map(d=>({id:d.id,...d.data()}));render()},()=>{$('list').innerHTML='<div class="error">No fue posible leer los expedientes.</div>'})}});
+function datos(){return{nombre:$('nombre').value.trim(),curp:$('curp').value.trim().toUpperCase(),rfc:$('rfc').value.trim().toUpperCase(),telefono:$('telefono').value.trim(),fechaNacimiento:$('fechaNacimiento').value,fechaInicio:$('fechaInicio').value,fechaSolicitud:$('fechaSolicitud').value,fechaCulminacion:$('fechaCulminacion').value,estado:$('estado').value,notas:$('notas').value.trim(),actualizado:serverTimestamp()}}
+function limpiar(){campos.forEach(x=>$(x).value='');fileInputs.forEach(x=>$(x).value='');$('estado').value='Activo';$('fotoPreview').src='';show('fotoPreview',false);editandoId=null;fotoActual=null;docsActuales=[];$('existingDocs').innerHTML='';$('formTitle').textContent='Nuevo expediente';$('saveBtn').textContent='Guardar expediente';show('cancelBtn',false)}
+function safeName(n){return n.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z0-9._-]/g,'_')}
+async function subir(file,folder,tipo){if(!file)return null;if(file.size>12*1024*1024)throw new Error('El archivo '+file.name+' supera 12 MB.');const path=`usuarios/${auth.currentUser.uid}/expedientes/${folder}/${Date.now()}_${safeName(file.name)}`;const r=sref(storage,path);await uploadBytes(r,file,{contentType:file.type});return{tipo,nombre:file.name,url:await getDownloadURL(r),path,mime:file.type}}
+async function subirDocumentos(folder){const specs=[['docFiscal','Constancia fiscal'],['docCurp','CURP'],['docId','Identificación oficial'],['docCuenta','Estado de cuenta']];const nuevos=[];for(const[id,tipo]of specs){const f=$(id).files[0];if(f)nuevos.push(await subir(f,folder,tipo))}for(const f of $('docOtros').files)nuevos.push(await subir(f,folder,'Otro documento'));return nuevos}
+function mostrarDocs(){if(!docsActuales.length){$('existingDocs').innerHTML='';return}$('existingDocs').innerHTML='<div class="section">Documentos actualmente guardados</div>'+docsActuales.map((d,i)=>`<div class="doc-chip"><a href="${d.url}" target="_blank" rel="noopener">${text(d.tipo)}: ${text(d.nombre)}</a><button type="button" class="danger" onclick="quitarDocumento(${i})">Quitar</button></div>`).join('')}
+window.quitarDocumento=i=>{docsActuales.splice(i,1);mostrarDocs()};
+$('saveBtn').onclick=async()=>{show('saveError',false);show('saveOk',false);const d=datos();if(!d.nombre){$('saveError').textContent='Escribe el nombre completo.';show('saveError',true);return}const id=editandoId||crypto.randomUUID();$('saveBtn').disabled=true;$('progress').textContent='Guardando datos y archivos…';show('progress',true);try{let foto=fotoActual;const nf=$('foto').files[0];if(nf)foto=await subir(nf,id,'Fotografía');const nuevos=await subirDocumentos(id);const payload={...d,foto,documentos:[...docsActuales,...nuevos]};if(editandoId)await updateDoc(doc(db,'usuarios',auth.currentUser.uid,'expedientes',editandoId),payload);else await addDoc(collection(db,'usuarios',auth.currentUser.uid,'expedientes'),{...payload,creado:serverTimestamp()});$('saveOk').textContent=editandoId?'Expediente actualizado correctamente.':'Expediente guardado correctamente.';show('saveOk',true);limpiar();window.scrollTo({top:0,behavior:'smooth'})}catch(e){console.error(e);$('saveError').textContent=e.code?.includes('storage')?'No se pudo subir el archivo. Activa Firebase Storage y sus reglas privadas.':'No se pudo guardar: '+(e.message||'revisa la conexión.');show('saveError',true)}finally{$('saveBtn').disabled=false;show('progress',false)}};
+$('cancelBtn').onclick=limpiar;$('search').oninput=render;
+window.editar=id=>{const r=registros.find(x=>x.id===id);if(!r)return;editandoId=id;campos.forEach(x=>$(x).value=r[x]||'');$('estado').value=r.estado||'Activo';fotoActual=r.foto||null;docsActuales=[...(r.documentos||[])];if(fotoActual?.url){$('fotoPreview').src=fotoActual.url;show('fotoPreview',true)}else show('fotoPreview',false);mostrarDocs();$('formTitle').textContent='Editar expediente';$('saveBtn').textContent='Guardar cambios';show('cancelBtn',true);window.scrollTo({top:0,behavior:'smooth'})};
+window.borrar=async id=>{const r=registros.find(x=>x.id===id);if(!r||!confirm('¿Eliminar este expediente y sus archivos de forma permanente?'))return;try{const archivos=[r.foto,...(r.documentos||[])].filter(Boolean);await Promise.allSettled(archivos.map(a=>a.path?deleteObject(sref(storage,a.path)):Promise.resolve()));await deleteDoc(doc(db,'usuarios',auth.currentUser.uid,'expedientes',id))}catch(e){alert('No se pudo eliminar el expediente.')}};
+function render(){const q=$('search').value.toLowerCase();const xs=registros.filter(r=>[r.nombre,r.curp,r.rfc,r.telefono].some(v=>String(v||'').toLowerCase().includes(q)));$('list').innerHTML=xs.length?xs.map(r=>`<div class="item"><div class="row">${r.foto?.url?`<img class="thumb" src="${r.foto.url}" alt="Foto">`:''}<div><strong>${text(r.nombre)}</strong><div class="small">${text(r.curp||'CURP pendiente')} · ${text(r.rfc||'RFC pendiente')}</div><div class="small">Estado: ${text(r.estado||'Activo')} · Teléfono: ${text(r.telefono||'—')}</div><div class="small">Inicio: ${text(r.fechaInicio||'—')} | Solicitud: ${text(r.fechaSolicitud||'—')} | Fin: ${text(r.fechaCulminacion||'—')}</div><div class="small">Documentos: ${(r.documentos||[]).length}</div><div class="docs">${(r.documentos||[]).slice(0,4).map(d=>`<a href="${d.url}" target="_blank" rel="noopener">${text(d.tipo)}</a>`).join('')}</div></div><div class="actions"><button class="success" onclick="editar('${r.id}')">Editar</button><button class="danger" onclick="borrar('${r.id}')">Eliminar</button></div></div></div>`).join(''):'<p class="small">No hay expedientes guardados.</p>'}
 </script>
-</body>
-</html>
+</body></html>
