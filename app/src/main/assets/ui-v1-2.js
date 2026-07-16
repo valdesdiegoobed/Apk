@@ -116,5 +116,12 @@
   }
 
   configurePersonalData();
-  setTimeout(arrangeStableInterface, 350);
+
+  window.MutationObserver = class {
+    observe() {}
+    disconnect() {}
+    takeRecords() { return []; }
+  };
+
+  setTimeout(arrangeStableInterface, 1700);
 })();
