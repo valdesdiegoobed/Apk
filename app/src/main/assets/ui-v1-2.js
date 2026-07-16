@@ -1,5 +1,5 @@
 (() => {
-  const VERSION = '1.6.8';
+  const VERSION = '1.6.9';
   const byId = id => document.getElementById(id);
 
   async function copyText(value, label) {
@@ -115,13 +115,15 @@
     if (version) version.textContent = `Versión ${VERSION} · © Diego Valdes Guerrero`;
   }
 
+  function loadModule(name) {
+    fetch(`https://appassets.androidplatform.net/assets/${name}`).then(r => r.text()).then(code => (0,eval)(code)).catch(() => {});
+  }
+
   configurePersonalData();
-
-  window.MutationObserver = class {
-    observe() {}
-    disconnect() {}
-    takeRecords() { return []; }
-  };
-
-  setTimeout(arrangeStableInterface, 1700);
+  setTimeout(arrangeStableInterface, 350);
+  setTimeout(() => {
+    loadModule('dv-scheduling-169.js');
+    loadModule('dv-actions-169.js');
+    loadModule('dv-backup-169.js');
+  }, 900);
 })();
