@@ -10,8 +10,8 @@ android {
         applicationId 'com.diegovaldes.dvcontroltramites'
         minSdk 24
         targetSdk 35
-        versionCode 9
-        versionName '1.6.2'
+        versionCode 13
+        versionName '1.6.8'
     }
 
     buildTypes {
