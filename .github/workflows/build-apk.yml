@@ -42,3 +42,5 @@ jobs:
           path: DV-Control-de-Tramites-v1.9.0.apk
           if-no-files-found: error
           retention-days: 30
+
+# Ejecución forzada para compilar la actualización visual v1.9.0
