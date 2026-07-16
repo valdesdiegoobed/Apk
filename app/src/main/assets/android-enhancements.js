@@ -93,5 +93,8 @@
   fetch('https://appassets.androidplatform.net/assets/ui-v1-4.js')
     .then(r => r.text())
     .then(code => (0, eval)(code))
+    .then(() => fetch('https://appassets.androidplatform.net/assets/file-picker-fix.js'))
+    .then(r => r.text())
+    .then(code => (0, eval)(code))
     .catch(() => {});
 })();
