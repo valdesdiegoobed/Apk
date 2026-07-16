@@ -1,0 +1,1 @@
+(()=>{setTimeout(()=>{import('https://appassets.androidplatform.net/assets/dv-sort-whatsapp-172.js');import('https://appassets.androidplatform.net/assets/dv-media-edit-172.js');import('https://appassets.androidplatform.net/assets/dv-saved-actions-172.js')},1200)})();
