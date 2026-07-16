@@ -1,5 +1,5 @@
 (() => {
-  const VERSION = '1.7.0';
+  const VERSION = '1.7.2';
   const byId = id => document.getElementById(id);
 
   async function copyText(value, label) {
@@ -126,5 +126,6 @@
     loadModule('dv-actions-169.js');
     loadModule('dv-backup-169.js');
     loadModule('dv-polish-170.js');
+    loadModule('dv-v172.js');
   }, 900);
 })();
