@@ -1,1 +1,3 @@
 Compilación limpia basada en los recursos exactos de DV Control de Trámites v1.8.3. Incluye únicamente el módulo Errores AFORE y usa un paquete independiente para instalación nueva.
+
+Verificación solicitada el 17 de julio de 2026: recompilar con Gradle, validar firma Android V2, paquete independiente, versión 1.8.4, integridad ZIP y presencia del catálogo AFORE antes de publicar el artefacto.
