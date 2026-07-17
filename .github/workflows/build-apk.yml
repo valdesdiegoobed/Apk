@@ -3,6 +3,8 @@ name: Compilar Nuevo Proyecto Android
 on:
   push:
     branches: [ nuevo-proyecto-android ]
+  pull_request:
+    branches: [ main ]
   workflow_dispatch:
 
 permissions:
