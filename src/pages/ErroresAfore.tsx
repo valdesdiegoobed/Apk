@@ -7,6 +7,7 @@ import {
   Alert,
   Box,
   Chip,
+  Divider,
   InputAdornment,
   MenuItem,
   Paper,
@@ -24,6 +25,16 @@ const confidenceColor: Record<Confidence, 'success' | 'warning' | 'default'> = {
   Baja: 'default',
 };
 
+const frequentSolutions = [
+  'Verificar CURP, NSS, RFC, nombre completo y fecha de nacimiento.',
+  'Confirmar que no exista otra solicitud o trámite activo.',
+  'Actualizar o completar el expediente biométrico directamente con la AFORE.',
+  'Repetir la captura facial con buena iluminación, cámara limpia y rostro sin accesorios.',
+  'Revisar que los documentos estén completos, vigentes, legibles y en el formato permitido.',
+  'Cerrar sesión, actualizar la aplicación y volver a intentar sin duplicar solicitudes.',
+  'Conservar el folio y escalar el caso con la AFORE cuando el error persista.',
+];
+
 function normalize(value: string) {
   return value
     .normalize('NFD')
@@ -39,6 +50,11 @@ export function Component() {
 
   const categories = useMemo(
     () => ['Todas', ...Array.from(new Set(aforeErrors.map((item) => item.category))).sort()],
+    [],
+  );
+
+  const documentedCount = useMemo(
+    () => aforeErrors.filter((item) => item.status === 'Documentado').length,
     [],
   );
 
@@ -72,20 +88,65 @@ export function Component() {
           <Typography variant="h4" component="h1">Errores AFORE</Typography>
         </Stack>
         <Typography color="text.secondary" sx={{ mt: 0.5 }}>
-          Busca por código, mensaje, trámite o palabras como CURP, selfie, token, sesión o documentos.
+          Investigación y catálogo de apoyo para identificar errores, causas probables y acciones recomendadas.
         </Typography>
       </Box>
 
+      <Paper variant="outlined" sx={{ p: 2.5 }}>
+        <Stack spacing={2}>
+          <Box>
+            <Typography variant="h6">Objetivo de la investigación</Typography>
+            <Typography color="text.secondary" sx={{ mt: 0.5 }}>
+              Reunir en un solo lugar los códigos y mensajes observados en AforeMóvil, AforeWeb y sistemas AFORE,
+              explicando su posible origen y ofreciendo pasos prácticos de atención sin inventar información ni
+              presentar como confirmada una causa que todavía requiere validación.
+            </Typography>
+          </Box>
+
+          <Divider />
+
+          <Box>
+            <Typography variant="h6">Resultados de la investigación</Typography>
+            <Typography color="text.secondary" sx={{ mt: 0.5 }}>
+              Se integró un catálogo de {aforeErrors.length} registros. Actualmente {documentedCount} están marcados
+              como documentados y {aforeErrors.length - documentedCount} permanecen en investigación. Los errores se
+              organizan por plataforma, categoría, proceso, nivel de confianza y número de reportes localizados.
+            </Typography>
+          </Box>
+
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} useFlexGap flexWrap="wrap">
+            <Chip label={`${aforeErrors.length} códigos registrados`} color="primary" />
+            <Chip label={`${categories.length - 1} categorías`} />
+            <Chip label="AforeMóvil · AforeWeb · Sistema AFORE" variant="outlined" />
+          </Stack>
+        </Stack>
+      </Paper>
+
+      <Accordion disableGutters>
+        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+          <Typography variant="h6">Soluciones más frecuentes encontradas</Typography>
+        </AccordionSummary>
+        <AccordionDetails>
+          <Box component="ol" sx={{ mt: 0, mb: 0, pl: 2.5 }}>
+            {frequentSolutions.map((solution) => (
+              <li key={solution}><Typography color="text.secondary" sx={{ mb: 0.75 }}>{solution}</Typography></li>
+            ))}
+          </Box>
+        </AccordionDetails>
+      </Accordion>
+
       <Alert severity="info">
-        Este catálogo es una guía de apoyo basada en evidencia pública. Cuando un registro está “En investigación”, el mensaje o la causa aún necesitan confirmación adicional.
+        Este catálogo es una guía de apoyo. La AFORE correspondiente debe confirmar la causa definitiva y la solución
+        oficial de cada caso. Cuando un registro aparece como “En investigación”, requiere evidencia adicional.
       </Alert>
 
       <Paper variant="outlined" sx={{ p: 2 }}>
         <Stack spacing={2}>
+          <Typography variant="h6">Catálogo completo</Typography>
           <TextField
             fullWidth
             label="Buscar error"
-            placeholder="Ejemplo: MC G04, no detecta mi rostro, CURP, sesión..."
+            placeholder="Ejemplo: MC G04, D96, CURP, selfie, token, sesión o documentos"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             InputProps={{
@@ -160,7 +221,7 @@ export function Component() {
                   </Box>
 
                   <Box>
-                    <Typography variant="subtitle2">Qué hacer</Typography>
+                    <Typography variant="subtitle2">Solución recomendada</Typography>
                     <Box component="ol" sx={{ mt: 0.5, mb: 0, pl: 2.5 }}>
                       {item.solution.map((step) => <li key={step}><Typography color="text.secondary">{step}</Typography></li>)}
                     </Box>
