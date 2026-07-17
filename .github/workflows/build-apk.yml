@@ -3,13 +3,15 @@ name: Compilar APK DV Control
 on:
   push:
     branches: [ main ]
+  pull_request:
+    branches: [ main ]
   workflow_dispatch:
 
 permissions:
   contents: read
 
 env:
-  APK_NAME: DV-Control-de-Tramites-v1.9.0.apk
+  APK_NAME: DV-Control-de-Tramites-v2.1.0.apk
 
 jobs:
   build:
@@ -38,9 +40,7 @@ jobs:
       - name: Publicar APK como artefacto
         uses: actions/upload-artifact@v4
         with:
-          name: DV-Control-de-Tramites-v1.9.0
-          path: DV-Control-de-Tramites-v1.9.0.apk
+          name: DV-Control-de-Tramites-v2.1.0
+          path: DV-Control-de-Tramites-v2.1.0.apk
           if-no-files-found: error
           retention-days: 30
-
-# Ejecución forzada para compilar la actualización visual v1.9.0

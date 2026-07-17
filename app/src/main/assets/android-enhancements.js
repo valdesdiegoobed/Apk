@@ -41,7 +41,7 @@
       <button type="button" class="secondary" data-link="https://www.facebook.com/share/1H5bgiH1Yv/">📘 Facebook</button>
       <button type="button" class="ok" data-link="https://wa.me/528663305029?text=Hola%20Diego,%20uso%20DV%20Control%20de%20Tr%C3%A1mites%20y%20quiero%20solicitar%20una%20mejora.">💡 Solicitar mejora</button>
     </div>
-    <p class="small">Versión 1.0.0 · © Diego Valdes Guerrero</p>`;
+    <p class="small">Versión 2.1.0 · © Diego Valdes Guerrero</p>`;
   document.querySelector('main.wrap')?.appendChild(footer);
   footer.querySelectorAll('[data-link]').forEach(b => b.addEventListener('click', () => location.href = b.dataset.link));
 
@@ -94,6 +94,11 @@
     .then(r => r.text())
     .then(code => (0, eval)(code))
     .then(() => fetch('https://appassets.androidplatform.net/assets/file-picker-fix.js'))
+    .then(r => r.text())
+    .then(code => (0, eval)(code))
+    .catch(() => {});
+
+  fetch('https://appassets.androidplatform.net/assets/afore-errors-v2-1.js')
     .then(r => r.text())
     .then(code => (0, eval)(code))
     .catch(() => {});
