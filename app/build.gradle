@@ -27,20 +27,8 @@ android {
     }
 }
 
-def npmInstall = tasks.register('npmInstall', Exec) {
-    workingDir rootProject.projectDir
-    commandLine 'npm', 'ci'
-}
-
-def buildWeb = tasks.register('buildWeb', Exec) {
-    dependsOn(npmInstall)
-    workingDir rootProject.projectDir
-    commandLine 'npx', 'vite', 'build'
-}
-
-def syncWebAssets = tasks.register('syncWebAssets', Sync) {
-    dependsOn(buildWeb)
-    from(rootProject.file('dist'))
+def syncWebAssets = tasks.register('syncWebAssets', Copy) {
+    from(rootProject.file('index.html'))
     into(layout.projectDirectory.dir('src/main/assets'))
 }
 
