@@ -10,8 +10,8 @@ android {
         applicationId 'com.diegovaldes.dvcontroltramites'
         minSdk 24
         targetSdk 35
-        versionCode 10
-        versionName '1.9.0'
+        versionCode 11
+        versionName '2.1.0'
     }
 
     buildTypes {
@@ -27,8 +27,20 @@ android {
     }
 }
 
-def syncWebAssets = tasks.register('syncWebAssets', Copy) {
-    from(rootProject.file('index.html'))
+def npmInstall = tasks.register('npmInstall', Exec) {
+    workingDir rootProject.projectDir
+    commandLine 'npm', 'ci'
+}
+
+def buildWeb = tasks.register('buildWeb', Exec) {
+    dependsOn(npmInstall)
+    workingDir rootProject.projectDir
+    commandLine 'npm', 'run', 'build'
+}
+
+def syncWebAssets = tasks.register('syncWebAssets', Sync) {
+    dependsOn(buildWeb)
+    from(rootProject.file('dist'))
     into(layout.projectDirectory.dir('src/main/assets'))
 }
 
