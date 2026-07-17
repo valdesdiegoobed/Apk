@@ -2,7 +2,7 @@ name: Compilar APK DV Control estable
 
 on:
   push:
-    branches: [ main, release/v184-clean-install ]
+    branches: [ main, release/v184-clean-install, release/v184-final-verified ]
   pull_request:
     branches: [ main ]
   workflow_dispatch:
@@ -31,7 +31,7 @@ jobs:
         with:
           gradle-version: '8.9'
 
-      - name: Restaurar exactamente los recursos de la APK estable v1.8.3
+      - name: Restaurar recursos exactos de la APK estable v1.8.3
         shell: bash
         run: |
           set -euo pipefail
@@ -42,7 +42,7 @@ jobs:
           cp -a /tmp/stable-assets/assets/. app/src/main/assets/
           test -f app/src/main/assets/index.html
           test -f app/src/main/assets/dv-v183.js
-          test -f app/src/main/assets/afore-errors-v1-8-4.js
+          cp afore-errors-v1-8-4-fixed.js app/src/main/assets/afore-errors-v1-8-4.js
           python3 - <<'PY'
           from pathlib import Path
           p = Path('app/src/main/assets/index.html')
@@ -53,11 +53,13 @@ jobs:
           p.write_text(s, encoding='utf-8')
           PY
           grep -q 'afore-errors-v1-8-4.js' app/src/main/assets/index.html
+          grep -q 'errors-afore' app/src/main/assets/afore-errors-v1-8-4.js
+          grep -q '#dvMenuPanel .dv-menu-grid' app/src/main/assets/afore-errors-v1-8-4.js
 
       - name: Compilar APK instalable con Gradle
         run: gradle clean assembleDebug --no-daemon --stacktrace
 
-      - name: Verificar paquete, firma y contenido
+      - name: Verificar paquete, firma, menú y catálogo
         shell: bash
         run: |
           set -euo pipefail
@@ -70,8 +72,10 @@ jobs:
           grep -q "package: name='com.diegovaldes.dvcontroltramites.afore'" /tmp/badging.txt
           grep -q "versionName='1.8.4'" /tmp/badging.txt
           unzip -p "$APK" assets/index.html | grep -q 'afore-errors-v1-8-4.js'
-          unzip -p "$APK" assets/afore-errors-v1-8-4.js | grep -q 'Errores AFORE'
+          unzip -p "$APK" assets/afore-errors-v1-8-4.js | grep -q '⚠️ Errores AFORE'
           unzip -p "$APK" assets/afore-errors-v1-8-4.js | grep -q 'MC G04'
+          unzip -p "$APK" assets/afore-errors-v1-8-4.js | grep -q 'errors-afore'
+          unzip -p "$APK" assets/afore-errors-v1-8-4.js | grep -q '#dvMenuPanel .dv-menu-grid'
           cp "$APK" "$APK_NAME"
           sha256sum "$APK_NAME" | tee SHA256SUMS.txt
 
