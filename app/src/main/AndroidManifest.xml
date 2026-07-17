@@ -5,7 +5,7 @@
     <application
         android:allowBackup="true"
         android:icon="@drawable/ic_launcher"
-        android:label="DV Control de Trámites"
+        android:label="Nuevo Proyecto Android"
         android:roundIcon="@drawable/ic_launcher"
         android:supportsRtl="true"
         android:theme="@style/Theme.DVControlTramites">
@@ -21,7 +21,7 @@
         </provider>
 
         <activity
-            android:name=".CameraMainActivity"
+            android:name=".MainActivity"
             android:exported="true"
             android:screenOrientation="portrait">
             <intent-filter>
