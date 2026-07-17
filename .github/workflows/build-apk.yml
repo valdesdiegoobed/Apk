@@ -2,7 +2,7 @@ name: Compilar APK DV Control estable
 
 on:
   push:
-    branches: [ main, release/v184-clean-install ]
+    branches: [ main, release/v184-final-clean ]
   pull_request:
     branches: [ main ]
   workflow_dispatch:
@@ -31,31 +31,31 @@ jobs:
         with:
           gradle-version: '8.9'
 
-      - name: Restaurar recursos exactos v1.8.3 cuando estén disponibles
+      - name: Restaurar base exacta v1.8.3 con módulo independiente
         shell: bash
         run: |
           set -euo pipefail
-          if [ -f stable-v183-assets.b64 ]; then
-            rm -rf app/src/main/assets
-            mkdir -p app/src/main/assets
-            base64 --decode stable-v183-assets.b64 > /tmp/stable-assets.zip
-            unzip -q /tmp/stable-assets.zip -d /tmp/stable-assets
-            cp -a /tmp/stable-assets/assets/. app/src/main/assets/
-            python3 - <<'PY'
-          from pathlib import Path
-          p = Path('app/src/main/assets/index.html')
-          s = p.read_text(encoding='utf-8')
-          tag = '<script src="afore-errors-v1-8-4.js"></script>'
-          if tag not in s:
-              s = s.replace('</body>', tag + '</body>')
-          p.write_text(s, encoding='utf-8')
-          PY
-          fi
+          curl -fsSL "https://raw.githubusercontent.com/valdesdiegoobed/Apk/release/v184-final-verified/stable-v183-assets.b64" -o /tmp/stable-v183-assets.b64
+          base64 --decode /tmp/stable-v183-assets.b64 > /tmp/stable-assets.zip
+          unzip -t /tmp/stable-assets.zip >/dev/null
+          rm -rf app/src/main/assets
+          mkdir -p app/src/main/assets
+          unzip -q /tmp/stable-assets.zip -d /tmp/stable-assets
+          cp -a /tmp/stable-assets/assets/. app/src/main/assets/
+          test -f app/src/main/assets/index.html
+          test -f app/src/main/assets/dv-v183.js
+          test -f app/src/main/assets/afore-errors-v1-8-4.js
+          grep -q 'afore-errors-v1-8-4.js' app/src/main/assets/index.html
+          grep -q '⚠️ Errores AFORE' app/src/main/assets/afore-errors-v1-8-4.js
+          grep -q 'Registrar error AFORE' app/src/main/assets/afore-errors-v1-8-4.js
+          grep -q 'Conclusión personal del asesor' app/src/main/assets/afore-errors-v1-8-4.js
+          grep -q 'MC G04' app/src/main/assets/afore-errors-v1-8-4.js
+          grep -q '#dvMenuPanel .dv-menu-grid' app/src/main/assets/afore-errors-v1-8-4.js
 
       - name: Compilar APK instalable
         run: gradle clean assembleDebug --no-daemon --stacktrace
 
-      - name: Verificar firma, paquete y contenido
+      - name: Verificar firma, paquete, versión, menú y catálogo
         shell: bash
         run: |
           set -euo pipefail
@@ -65,15 +65,14 @@ jobs:
           apksigner verify --verbose --print-certs "$APK" | tee /tmp/apksigner.txt
           grep -q 'Verified using v2 scheme.*true' /tmp/apksigner.txt
           aapt dump badging "$APK" | tee /tmp/badging.txt
-          if [ -f stable-v183-assets.b64 ]; then
-            grep -q "package: name='com.diegovaldes.dvcontroltramites.afore'" /tmp/badging.txt
-            grep -q "versionName='1.8.4'" /tmp/badging.txt
-            unzip -p "$APK" assets/index.html | grep -q 'afore-errors-v1-8-4.js'
-            unzip -p "$APK" assets/afore-errors-v1-8-4.js | grep -q 'Errores AFORE'
-            unzip -p "$APK" assets/afore-errors-v1-8-4.js | grep -q 'MC G04'
-          fi
+          grep -q "package: name='com.diegovaldes.dvcontroltramites.afore'" /tmp/badging.txt
+          grep -q "versionName='1.8.4'" /tmp/badging.txt
+          unzip -p "$APK" assets/index.html | grep -q 'afore-errors-v1-8-4.js'
+          unzip -p "$APK" assets/afore-errors-v1-8-4.js | grep -q '⚠️ Errores AFORE'
+          unzip -p "$APK" assets/afore-errors-v1-8-4.js | grep -q 'Registrar error AFORE'
+          unzip -p "$APK" assets/afore-errors-v1-8-4.js | grep -q 'MC G04'
           cp "$APK" "$APK_NAME"
-          sha256sum "$APK_NAME" > SHA256SUMS.txt
+          sha256sum "$APK_NAME" | tee SHA256SUMS.txt
 
       - name: Publicar APK comprobada
         uses: actions/upload-artifact@v4
