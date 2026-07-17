@@ -36,7 +36,7 @@ jobs:
           test -f build.gradle
           test -f app/build.gradle
           test -f app/src/main/AndroidManifest.xml
-          test -f app/src/main/assets/index.html
+          test -f index.html
 
       - name: Compilar APK debug
         run: gradle :app:assembleDebug --stacktrace --no-daemon
