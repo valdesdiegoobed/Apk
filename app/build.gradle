@@ -7,11 +7,11 @@ android {
     compileSdk 35
 
     defaultConfig {
-        applicationId 'com.diegovaldes.dvcontroltramites'
+        applicationId 'com.diegovaldes.dvcontroltramites.afore'
         minSdk 24
         targetSdk 35
-        versionCode 11
-        versionName '2.1.0'
+        versionCode 28
+        versionName '1.8.4'
     }
 
     buildTypes {
@@ -25,15 +25,6 @@ android {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
     }
-}
-
-def syncWebAssets = tasks.register('syncWebAssets', Copy) {
-    from(rootProject.file('index.html'))
-    into(layout.projectDirectory.dir('src/main/assets'))
-}
-
-tasks.named('preBuild').configure {
-    dependsOn(syncWebAssets)
 }
 
 dependencies {

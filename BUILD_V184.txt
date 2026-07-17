@@ -1,0 +1,1 @@
+Compilación limpia basada en los recursos exactos de DV Control de Trámites v1.8.3. Incluye únicamente el módulo Errores AFORE y usa un paquete independiente para instalación nueva.
