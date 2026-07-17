@@ -1,7 +1,9 @@
-name: Compilar APK DV Control
+name: Compilar APK DV Control estable
 
 on:
   push:
+    branches: [ main, release/v184-clean-install ]
+  pull_request:
     branches: [ main ]
   workflow_dispatch:
 
@@ -9,7 +11,7 @@ permissions:
   contents: read
 
 env:
-  APK_NAME: DV-Control-de-Tramites-v1.9.0.apk
+  APK_NAME: DV-Control-de-Tramites-v1.8.4-Errores-AFORE.apk
 
 jobs:
   build:
@@ -29,18 +31,56 @@ jobs:
         with:
           gradle-version: '8.9'
 
-      - name: Compilar APK debug
-        run: gradle assembleDebug --no-daemon
+      - name: Restaurar exactamente los recursos de la APK estable v1.8.3
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf app/src/main/assets
+          mkdir -p app/src/main/assets
+          base64 --decode stable-v183-assets.b64 > /tmp/stable-assets.zip
+          unzip -q /tmp/stable-assets.zip -d /tmp/stable-assets
+          cp -a /tmp/stable-assets/assets/. app/src/main/assets/
+          test -f app/src/main/assets/index.html
+          test -f app/src/main/assets/dv-v183.js
+          test -f app/src/main/assets/afore-errors-v1-8-4.js
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('app/src/main/assets/index.html')
+          s = p.read_text(encoding='utf-8')
+          tag = '<script src="afore-errors-v1-8-4.js"></script>'
+          if tag not in s:
+              s = s.replace('</body>', tag + '</body>')
+          p.write_text(s, encoding='utf-8')
+          PY
+          grep -q 'afore-errors-v1-8-4.js' app/src/main/assets/index.html
 
-      - name: Preparar APK
-        run: cp app/build/outputs/apk/debug/app-debug.apk "$APK_NAME"
+      - name: Compilar APK instalable con Gradle
+        run: gradle clean assembleDebug --no-daemon --stacktrace
 
-      - name: Publicar APK como artefacto
+      - name: Verificar paquete, firma y contenido
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK=app/build/outputs/apk/debug/app-debug.apk
+          test -s "$APK"
+          unzip -t "$APK" >/dev/null
+          apksigner verify --verbose --print-certs "$APK" | tee /tmp/apksigner.txt
+          grep -q 'Verified using v2 scheme.*true' /tmp/apksigner.txt
+          aapt dump badging "$APK" | tee /tmp/badging.txt
+          grep -q "package: name='com.diegovaldes.dvcontroltramites.afore'" /tmp/badging.txt
+          grep -q "versionName='1.8.4'" /tmp/badging.txt
+          unzip -p "$APK" assets/index.html | grep -q 'afore-errors-v1-8-4.js'
+          unzip -p "$APK" assets/afore-errors-v1-8-4.js | grep -q 'Errores AFORE'
+          unzip -p "$APK" assets/afore-errors-v1-8-4.js | grep -q 'MC G04'
+          cp "$APK" "$APK_NAME"
+          sha256sum "$APK_NAME" | tee SHA256SUMS.txt
+
+      - name: Publicar APK comprobada
         uses: actions/upload-artifact@v4
         with:
-          name: DV-Control-de-Tramites-v1.9.0
-          path: DV-Control-de-Tramites-v1.9.0.apk
+          name: DV-Control-de-Tramites-v1.8.4-Errores-AFORE-INSTALABLE
+          path: |
+            DV-Control-de-Tramites-v1.8.4-Errores-AFORE.apk
+            SHA256SUMS.txt
           if-no-files-found: error
           retention-days: 30
-
-# Ejecución forzada para compilar la actualización visual v1.9.0
