@@ -24,6 +24,7 @@ const router = createHashRouter([
       { index: true, element: <Navigate to="expedientes" replace /> },
       { path: 'expedientes', lazy: () => import('./pages/Expedientes') },
       { path: 'expedientes/:id', lazy: () => import('./pages/DetalleExpediente') },
+      { path: 'errores-afore', lazy: () => import('./pages/ErroresAfore') },
       { path: 'configuracion', lazy: () => import('./pages/Configuracion') },
     ],
   },
