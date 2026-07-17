@@ -35,7 +35,7 @@ def npmInstall = tasks.register('npmInstall', Exec) {
 def buildWeb = tasks.register('buildWeb', Exec) {
     dependsOn(npmInstall)
     workingDir rootProject.projectDir
-    commandLine 'npm', 'run', 'build'
+    commandLine 'npx', 'vite', 'build'
 }
 
 def syncWebAssets = tasks.register('syncWebAssets', Sync) {
