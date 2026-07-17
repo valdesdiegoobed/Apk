@@ -3,7 +3,7 @@ plugins {
 }
 
 android {
-    namespace 'com.nuevoproyecto.android'
+    namespace 'com.diegovaldes.dvcontroltramites'
     compileSdk 35
 
     defaultConfig {
