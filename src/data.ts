@@ -1,24 +1,68 @@
-export type EstadoExpediente = 'Activo' | 'En revisión' | 'Archivado';
+export type EstadoSolicitud = 'Pendiente' | 'Activa' | 'Realizada' | 'Vencida';
+
+export type DocumentoCliente = {
+  tipo: string;
+  nombre: string;
+  mime: string;
+  dataUrl: string;
+  fechaCarga: string;
+};
 
 export type Expediente = {
   id: string;
   cliente: string;
-  estado: EstadoExpediente;
-  categoria: string;
-  ultimaActualizacion: string;
-  responsable: string;
-  documentos: number;
+  fechaCreacion: string;
+  foto?: DocumentoCliente;
+  curp: string;
+  contrasenaAfore: string;
+  telefono: string;
+  fechaInicio: string;
+  fechaSolicitud: string;
+  estadoSolicitud: EstadoSolicitud;
   notas: string;
-  curp?: string;
-  rfc?: string;
-  telefono?: string;
-  fechaInicio?: string;
-  fechaSolicitud?: string;
-  fechaCulminacion?: string;
+  documentos: DocumentoCliente[];
+  favorito?: boolean;
 };
 
-export const expedientesDemo: Expediente[] = [
-  { id: 'EXP-0001', cliente: 'Cliente Ficticio Aurora', estado: 'Activo', categoria: 'Ayuda por desempleo', ultimaActualizacion: '2026-07-10', responsable: 'Asesoría', documentos: 4, notas: 'Pendiente validar documento de identidad ficticio.', curp: 'AAAA000101HCLXXX01', rfc: 'AAAA000101AA1', telefono: '8660000001', fechaInicio: '2026-07-01', fechaSolicitud: '2026-07-20', fechaCulminacion: '2026-07-23' },
-  { id: 'EXP-0002', cliente: 'Persona Demo Norte', estado: 'En revisión', categoria: 'Ayuda por desempleo', ultimaActualizacion: '2026-07-12', responsable: 'Asesoría', documentos: 7, notas: 'Revisión interna con información simulada.', curp: 'BBBB000202MCLXXX02', rfc: 'BBBB000202BB2', telefono: '8660000002' },
-  { id: 'EXP-0003', cliente: 'Persona de Prueba Central', estado: 'Archivado', categoria: 'Ayuda por desempleo', ultimaActualizacion: '2026-06-28', responsable: 'Archivo', documentos: 3, notas: 'Expediente cerrado con datos inventados.', curp: 'CCCC000303HCLXXX03', rfc: 'CCCC000303CC3', telefono: '8660000003' },
-];
+export const TIPOS_DOCUMENTO = [
+  'Identificación frontal',
+  'Identificación trasera',
+  'Pagaré',
+  'Estado de cuenta',
+  'Constancia de situación fiscal',
+] as const;
+
+export function sumarDiasNaturales(fecha: string, dias: number) {
+  if (!fecha) return '';
+  const [ano, mes, dia] = fecha.split('-').map(Number);
+  const valor = new Date(ano, mes - 1, dia);
+  valor.setDate(valor.getDate() + dias);
+  return `${valor.getFullYear()}-${String(valor.getMonth() + 1).padStart(2, '0')}-${String(valor.getDate()).padStart(2, '0')}`;
+}
+
+export function fechaHoy() {
+  const hoy = new Date();
+  return `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(hoy.getDate()).padStart(2, '0')}`;
+}
+
+export function diferenciaDias(fecha: string, referencia = fechaHoy()) {
+  if (!fecha) return Number.POSITIVE_INFINITY;
+  const a = new Date(`${referencia}T00:00:00`);
+  const b = new Date(`${fecha}T00:00:00`);
+  return Math.round((b.getTime() - a.getTime()) / 86400000);
+}
+
+export function diaProceso(expediente: Expediente) {
+  if (!expediente.fechaInicio) return 0;
+  return Math.max(1, 1 - diferenciaDias(expediente.fechaInicio));
+}
+
+export function estadoCalculado(expediente: Expediente): EstadoSolicitud {
+  if (expediente.estadoSolicitud === 'Realizada') return 'Realizada';
+  const dias = diferenciaDias(expediente.fechaSolicitud);
+  if (dias < 0) return 'Vencida';
+  if (dias === 0) return 'Activa';
+  return 'Pendiente';
+}
+
+export const expedientesDemo: Expediente[] = [];

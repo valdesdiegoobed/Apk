@@ -1,49 +1,37 @@
-import { Delete, Save } from '@mui/icons-material';
-import { Alert, Button, Card, CardContent, MenuItem, Stack, TextField, Typography } from '@mui/material';
+import { CallRounded, Close, ContentCopyRounded, Delete, Download, EditRounded, PictureAsPdfRounded, Save, Visibility, WhatsApp } from '@mui/icons-material';
+import { Accordion, AccordionDetails, AccordionSummary, Alert, Avatar, Box, Button, Card, CardContent, Chip, LinearProgress, MenuItem, Snackbar, Stack, TextField, Typography } from '@mui/material';
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import type { EstadoExpediente, Expediente } from '../data';
+import { TIPOS_DOCUMENTO, diaProceso, estadoCalculado, type DocumentoCliente, type EstadoSolicitud, type Expediente } from '../data';
 import { cargarExpedientes, guardarExpedientes } from '../expedientesStore';
 
-export function Component() {
-  const { id } = useParams();
-  const navigate = useNavigate();
-  const [lista, setLista] = useState<Expediente[]>(cargarExpedientes);
-  const encontrado = lista.find((item) => item.id === id);
-  const [expediente, setExpediente] = useState<Expediente | undefined>(encontrado);
-  const [guardado, setGuardado] = useState(false);
+const digits=(v='')=>v.replace(/\D/g,'');
+function descargar(a:DocumentoCliente){const x=document.createElement('a');x.href=a.dataUrl;x.download=a.nombre;x.click()}
 
-  if (!expediente) return <Stack spacing={2}><Alert severity="warning">El expediente no existe en este navegador.</Alert><Button component={Link} to="/expedientes">Volver</Button></Stack>;
-
-  const cambiar = (campo: keyof Expediente, valor: string) => setExpediente({ ...expediente, [campo]: valor });
-  const guardar = () => {
-    const actualizado = { ...expediente, cliente: expediente.cliente.trim(), curp: expediente.curp?.toUpperCase(), rfc: expediente.rfc?.toUpperCase(), ultimaActualizacion: new Date().toISOString().slice(0, 10) };
-    const nuevos = lista.map((item) => item.id === actualizado.id ? actualizado : item);
-    setLista(nuevos); setExpediente(actualizado); guardarExpedientes(nuevos); setGuardado(true);
-  };
-  const eliminar = () => {
-    if (!confirm('¿Eliminar este expediente ficticio de este navegador?')) return;
-    guardarExpedientes(lista.filter((item) => item.id !== expediente.id)); navigate('/expedientes');
-  };
-
-  return <Stack spacing={3}>
-    <Button component={Link} to="/expedientes" sx={{ alignSelf: 'flex-start' }}>← Volver</Button>
-    <Card><CardContent><Stack spacing={2}>
-      <Typography variant="h4" fontWeight={700}>{expediente.cliente}</Typography>
-      <Typography color="text.secondary">Folio {expediente.id}</Typography>
-      <Alert severity="warning">Modo de prueba. Los cambios se guardan solo en este dispositivo y pueden perderse si se borran los datos del navegador.</Alert>
-      {guardado && <Alert severity="success">Los cambios se guardaron correctamente.</Alert>}
-      <TextField label="Nombre completo" value={expediente.cliente} onChange={(e) => cambiar('cliente', e.target.value)} required/>
-      <TextField label="CURP" value={expediente.curp || ''} onChange={(e) => cambiar('curp', e.target.value.toUpperCase())}/>
-      <TextField label="RFC" value={expediente.rfc || ''} onChange={(e) => cambiar('rfc', e.target.value.toUpperCase())}/>
-      <TextField label="Teléfono" value={expediente.telefono || ''} onChange={(e) => cambiar('telefono', e.target.value)}/>
-      <TextField select label="Estado" value={expediente.estado} onChange={(e) => cambiar('estado', e.target.value as EstadoExpediente)}>{['Activo','En revisión','Archivado'].map((v) => <MenuItem key={v} value={v}>{v}</MenuItem>)}</TextField>
-      <TextField label="Fecha de inicio" type="date" InputLabelProps={{ shrink: true }} value={expediente.fechaInicio || ''} onChange={(e) => cambiar('fechaInicio', e.target.value)}/>
-      <TextField label="Fecha para crear solicitud" type="date" InputLabelProps={{ shrink: true }} value={expediente.fechaSolicitud || ''} onChange={(e) => cambiar('fechaSolicitud', e.target.value)}/>
-      <TextField label="Fecha de culminación" type="date" InputLabelProps={{ shrink: true }} value={expediente.fechaCulminacion || ''} onChange={(e) => cambiar('fechaCulminacion', e.target.value)}/>
-      <TextField label="Notas y avances" multiline minRows={5} value={expediente.notas} onChange={(e) => cambiar('notas', e.target.value)}/>
-      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}><Button variant="contained" startIcon={<Save />} onClick={guardar}>Guardar cambios</Button><Button color="error" startIcon={<Delete />} onClick={eliminar}>Eliminar ficticio</Button></Stack>
-      <Typography variant="body2" color="text.secondary">Documentos registrados: {expediente.documentos}. La carga de PDF e imágenes se habilitará al conectar Firebase Storage.</Typography>
-    </Stack></CardContent></Card>
-  </Stack>;
+export function Component(){
+ const {id}=useParams(); const nav=useNavigate(); const [lista,setLista]=useState<Expediente[]>(cargarExpedientes); const original=lista.find(x=>x.id===id); const [e,setE]=useState<Expediente|undefined>(original); const [editando,setEditando]=useState(false); const [mensaje,setMensaje]=useState('');
+ if(!e)return <Stack><Alert severity="warning">El expediente no existe.</Alert><Button component={Link} to="/expedientes">Volver</Button></Stack>;
+ const dia=diaProceso(e); const progreso=Math.min(100,(dia/46)*100); const estado=estadoCalculado(e); const docs=e.documentos;
+ const cambiar=<K extends keyof Expediente>(k:K,v:Expediente[K])=>setE({...e,[k]:v});
+ const guardar=()=>{const actualizado={...e,cliente:e.cliente.toUpperCase().trim(),curp:e.curp.toUpperCase()};const nueva=lista.map(x=>x.id===e.id?actualizado:x);guardarExpedientes(nueva);setLista(nueva);setE(actualizado);setEditando(false);setMensaje('Cambios guardados')};
+ const eliminar=()=>{if(confirm('¿Estás seguro de eliminar este expediente?')){guardarExpedientes(lista.filter(x=>x.id!==e.id));nav('/expedientes')}};
+ const copiar=async()=>{await navigator.clipboard.writeText(e.curp);setMensaje('CURP copiada')};
+ const whatsapp=()=>{const t=digits(e.telefono);if(!t)return setMensaje('No hay teléfono guardado');window.open(`https://wa.me/52${t.replace(/^52/,'')}?text=${encodeURIComponent(`Hola ${e.cliente}, me comunico respecto a tu trámite.`)}`,'_blank')};
+ const compartir=async(a:DocumentoCliente)=>{const r=await fetch(a.dataUrl);const f=new File([await r.blob()],a.nombre,{type:a.mime});if(navigator.share)await navigator.share({files:[f],title:a.tipo});else setMensaje('Este dispositivo no permite compartir archivos')};
+ return <Stack spacing={2}>
+  <Button component={Link} to="/expedientes" sx={{alignSelf:'flex-start'}}>← Volver</Button>
+  <Card variant="outlined" sx={{borderRadius:4}}><CardContent><Stack spacing={2}>
+   <Stack direction="row" spacing={2} alignItems="center"><Avatar src={e.foto?.dataUrl} sx={{width:96,height:96}}>{e.cliente[0]}</Avatar><Box flex={1}><Typography variant="h4" fontWeight={900}>{e.cliente}</Typography><Typography color="text.secondary">Creado: {e.fechaCreacion.slice(0,10)}</Typography><Typography variant="h6" fontWeight={800}>Día {Math.min(dia,46)} de 46 · {estado}</Typography><LinearProgress variant="determinate" value={progreso} color={estado==='Vencida'?'error':'primary'} sx={{height:12,borderRadius:8,mt:1}}/></Box></Stack>
+   <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap"><Chip label={estado} color={estado==='Realizada'?'success':estado==='Vencida'?'error':estado==='Activa'?'warning':'default'}/><Chip label={`📁 ${docs.length}/5 documentos`} color={docs.length===5?'success':'default'}/>{dia>46&&estado!=='Realizada'&&<Chip label={`⚠️ Día ${dia} del proceso · solicitud vencida`} color="error"/>}</Stack>
+   <Typography>🪪 {e.curp||'CURP pendiente'}<br/>📞 {e.telefono||'Teléfono pendiente'}<br/>🚩 Inicio: {e.fechaInicio||'Sin fecha'} · ⏰ Solicitud: {e.fechaSolicitud||'Sin fecha'}</Typography>
+   <LinearProgress variant="determinate" value={(docs.length/5)*100} color={docs.length===5?'success':'primary'} sx={{height:10,borderRadius:8}}/>
+   {docs.length<5&&<Typography color="text.secondary">Faltan: {TIPOS_DOCUMENTO.filter(t=>!docs.some(a=>a.tipo===t)).join(', ')}</Typography>}
+   {e.foto&&<Accordion><AccordionSummary><Typography fontWeight={900}>📷 Fotografía del cliente</Typography></AccordionSummary><AccordionDetails><Box sx={{display:'grid',gridTemplateColumns:'repeat(2,1fr)',gap:1}}><Button size="small" variant="contained" startIcon={<Visibility/>} onClick={()=>window.open(e.foto!.dataUrl,'_blank')}>Ver</Button><Button size="small" color="success" variant="contained" startIcon={<WhatsApp/>} onClick={()=>void compartir(e.foto!)}>WhatsApp</Button><Button size="small" variant="outlined" startIcon={<Download/>} onClick={()=>descargar(e.foto!)}>Guardar</Button><Button size="small" variant="outlined" startIcon={<Close/>}>Cerrar</Button></Box></AccordionDetails></Accordion>}
+   <Accordion><AccordionSummary><Typography fontWeight={900}>📁 Documentos del cliente · {docs.length}/5</Typography></AccordionSummary><AccordionDetails><Stack spacing={2}>{TIPOS_DOCUMENTO.map(tipo=>{const a=docs.find(x=>x.tipo===tipo);return <Card key={tipo} variant="outlined"><CardContent><Typography fontWeight={800} mb={1}>{tipo}</Typography>{a?<Box sx={{display:'grid',gridTemplateColumns:'repeat(2,1fr)',gap:1}}><Button size="small" variant="contained" startIcon={<Visibility/>} onClick={()=>window.open(a.dataUrl,'_blank')}>Ver</Button><Button size="small" color="success" variant="contained" startIcon={<WhatsApp/>} onClick={()=>void compartir(a)}>WhatsApp</Button><Button size="small" variant="outlined" startIcon={<Download/>} onClick={()=>descargar(a)}>Guardar</Button><Button size="small" variant="outlined" startIcon={<Close/>}>Cerrar</Button></Box>:<Chip label="Pendiente"/>}</CardContent></Card>})}</Stack></AccordionDetails></Accordion>
+   <TextField select label="Estado de la solicitud de retiro" value={e.estadoSolicitud} onChange={x=>cambiar('estadoSolicitud',x.target.value as EstadoSolicitud)}>{['Pendiente','Activa','Realizada','Vencida'].map(v=><MenuItem key={v} value={v}>{v}</MenuItem>)}</TextField>
+   {editando&&<Stack spacing={1.5}><TextField label="Nombre completo" value={e.cliente} onChange={x=>cambiar('cliente',x.target.value.toUpperCase())}/><TextField label="CURP" value={e.curp} onChange={x=>cambiar('curp',x.target.value.toUpperCase())}/><TextField label="Contraseña AFORE" value={e.contrasenaAfore} onChange={x=>cambiar('contrasenaAfore',x.target.value)}/><TextField label="Teléfono / WhatsApp" value={e.telefono} onChange={x=>cambiar('telefono',x.target.value.replace(/\D/g,'').slice(0,10))}/><TextField multiline minRows={3} label="Notas" inputProps={{maxLength:100}} value={e.notas} onChange={x=>cambiar('notas',x.target.value)}/></Stack>}
+   <Box sx={{display:'grid',gridTemplateColumns:{xs:'1fr',sm:'repeat(2,1fr)'},gap:1.2}}><Button variant="outlined" startIcon={<PictureAsPdfRounded/>} onClick={()=>window.print()}>Generar PDF</Button><Button color="success" variant="contained" startIcon={<WhatsApp/>} onClick={whatsapp}>Enviar WhatsApp</Button><Button variant="outlined" startIcon={<CallRounded/>} href={`tel:${digits(e.telefono)}`}>Llamar al cliente</Button><Button variant="outlined" startIcon={<ContentCopyRounded/>} onClick={()=>void copiar()}>Copiar CURP</Button>{!editando?<Button variant="contained" startIcon={<EditRounded/>} onClick={()=>setEditando(true)}>Editar expediente</Button>:<Button variant="contained" startIcon={<Save/>} onClick={guardar}>Guardar cambios</Button>}<Button color="error" variant="outlined" startIcon={<Delete/>} onClick={eliminar}>Eliminar expediente</Button></Box>
+  </Stack></CardContent></Card>
+  <Snackbar open={!!mensaje} autoHideDuration={2500} onClose={()=>setMensaje('')} message={mensaje}/>
+ </Stack>
 }

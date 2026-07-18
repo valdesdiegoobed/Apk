@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#12355b">
+  <title>Nuevo Proyecto Android</title>
+  <style>
+    :root{font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif;color:#172033;background:#f3f6fa}*{box-sizing:border-box}body{margin:0}.top{background:linear-gradient(135deg,#12355b,#2563a6);color:#fff;padding:22px 18px 30px;border-radius:0 0 28px 28px;box-shadow:0 5px 18px #102a4328}.brand{font-size:.78rem;letter-spacing:.09em;text-transform:uppercase;opacity:.8}.top h1{font-size:1.65rem;margin:7px 0}.top p{margin:0;line-height:1.45;opacity:.9}.wrap{padding:18px;max-width:760px;margin:auto}.section{margin:7px 2px 12px}.section h2{font-size:1.12rem;margin:0}.section p{color:#667085;margin:5px 0 0;font-size:.9rem}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.card{border:1px solid #dce3ec;background:#fff;border-radius:18px;padding:16px;min-height:145px;box-shadow:0 3px 12px #1720330c;cursor:pointer}.card:active{transform:scale(.98)}.icon{font-size:2rem}.card h3{margin:12px 0 5px;font-size:1rem}.card p{margin:0;color:#667085;font-size:.82rem;line-height:1.35}.tag{display:inline-block;margin-top:12px;border-radius:99px;padding:5px 9px;background:#e7f0ff;color:#155eef;font-size:.72rem;font-weight:800}.action{width:100%;border:0;border-radius:14px;padding:14px;background:#155eef;color:#fff;font-weight:800;font-size:1rem;margin-top:16px}.notice{margin-top:16px;padding:13px;border-radius:14px;background:#fff7d6;color:#5f4b00;font-size:.86rem}.footer{text-align:center;color:#98a2b3;font-size:.76rem;padding:22px 0 10px}@media(min-width:650px){.grid{grid-template-columns:repeat(4,1fr)}}
+  </style>
+</head>
+<body>
+  <header class="top">
+    <div class="brand">Aplicación Android · Versión 1.0</div>
+    <h1>Nuevo Proyecto Android</h1>
+    <p>Base independiente para administrar clientes, expedientes, documentos y trámites desde tu teléfono.</p>
+  </header>
+  <main class="wrap">
+    <div class="section"><h2>Módulos principales</h2><p>Esta primera APK permite visualizar y probar la estructura inicial.</p></div>
+    <div class="grid">
+      <article class="card" onclick="openModule('Expedientes')"><div class="icon">🗂️</div><h3>Expedientes</h3><p>Registro y consulta de clientes.</p><span class="tag">Base preparada</span></article>
+      <article class="card" onclick="openModule('Documentos')"><div class="icon">📄</div><h3>Documentos</h3><p>Fotografías, imágenes y PDF.</p><span class="tag">Base preparada</span></article>
+      <article class="card" onclick="openModule('Errores AFORE')"><div class="icon">⚠️</div><h3>Errores AFORE</h3><p>Catálogo y soluciones rápidas.</p><span class="tag">Próxima etapa</span></article>
+      <article class="card" onclick="openModule('Configuración')"><div class="icon">⚙️</div><h3>Configuración</h3><p>Seguridad, respaldo y nube.</p><span class="tag">Próxima etapa</span></article>
+    </div>
+    <button class="action" onclick="openModule('Nuevo expediente')">➕ Registrar primer cliente</button>
+    <div id="notice" class="notice">La instalación funciona de manera local. En las siguientes versiones se habilitarán los formularios y el guardado de datos.</div>
+    <div class="footer">Nuevo Proyecto Android · Desarrollo independiente</div>
+  </main>
+  <script>
+    function openModule(name){document.getElementById('notice').textContent='Módulo «'+name+'» seleccionado. La navegación y sus funciones se incorporarán en la siguiente versión.'}
+  </script>
+</body>
+</html>

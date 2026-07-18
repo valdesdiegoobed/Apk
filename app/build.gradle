@@ -7,11 +7,11 @@ android {
     compileSdk 35
 
     defaultConfig {
-        applicationId 'com.diegovaldes.dvcontroltramites'
+        applicationId 'com.nuevoproyecto.android'
         minSdk 24
         targetSdk 35
-        versionCode 11
-        versionName '2.1.0'
+        versionCode 1
+        versionName '1.0.0'
     }
 
     buildTypes {
@@ -28,8 +28,9 @@ android {
 }
 
 def syncWebAssets = tasks.register('syncWebAssets', Copy) {
-    from(rootProject.file('index.html'))
+    from(rootProject.file('nuevo-index.html'))
     into(layout.projectDirectory.dir('src/main/assets'))
+    rename { 'index.html' }
 }
 
 tasks.named('preBuild').configure {
