@@ -1,97 +1,33 @@
-import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
-import CloudDoneOutlinedIcon from '@mui/icons-material/CloudDoneOutlined';
-import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
-import FolderSharedOutlinedIcon from '@mui/icons-material/FolderSharedOutlined';
-import SearchIcon from '@mui/icons-material/Search';
-import WarningAmberOutlinedIcon from '@mui/icons-material/WarningAmberOutlined';
-import { Box, Button, Card, CardActionArea, CardContent, Chip, Grid, Stack, Typography } from '@mui/material';
-import { Link as RouterLink } from 'react-router-dom';
+import { Box, Card, CardActionArea, CardContent, Chip, LinearProgress, Stack, Typography } from '@mui/material';
+import { Link } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
+import type { Expediente } from '../data';
+import { cargarExpedientes } from '../expedientesStore';
 
-const modules = [
-  {
-    title: 'Expedientes',
-    description: 'Consulta, registra y administra la información de tus clientes.',
-    icon: <FolderSharedOutlinedIcon fontSize="large" />,
-    to: '/expedientes',
-    status: 'Disponible',
-  },
-  {
-    title: 'Documentos',
-    description: 'Base preparada para fotografías, imágenes y archivos PDF.',
-    icon: <DescriptionOutlinedIcon fontSize="large" />,
-    to: '/expedientes',
-    status: 'Preparado',
-  },
-  {
-    title: 'Errores AFORE',
-    description: 'Consulta el catálogo de errores y sus posibles soluciones.',
-    icon: <WarningAmberOutlinedIcon fontSize="large" />,
-    to: '/errores-afore',
-    status: 'Disponible',
-  },
-  {
-    title: 'Sincronización',
-    description: 'Configuración de Firebase y respaldo de información.',
-    icon: <CloudDoneOutlinedIcon fontSize="large" />,
-    to: '/configuracion',
-    status: 'Configurable',
-  },
-];
+function diasHasta(fecha?: string) { if (!fecha) return 9999; const h = new Date(); h.setHours(0,0,0,0); return Math.round((new Date(`${fecha}T00:00:00`).getTime()-h.getTime())/86400000); }
 
 export function Component() {
-  return (
-    <Stack spacing={3}>
-      <Box
-        sx={{
-          p: { xs: 2.5, sm: 4 },
-          borderRadius: 4,
-          background: 'linear-gradient(135deg, #12355b 0%, #2563a6 100%)',
-          color: 'white',
-          boxShadow: 3,
-        }}
-      >
-        <Typography variant="overline" sx={{ opacity: 0.85 }}>
-          Aplicación Android · Versión inicial
-        </Typography>
-        <Typography variant="h4" fontWeight={800} gutterBottom>
-          Nuevo Proyecto Android
-        </Typography>
-        <Typography sx={{ maxWidth: 680, opacity: 0.9, mb: 2.5 }}>
-          Base de trabajo para administrar clientes, expedientes, documentos y trámites desde tu teléfono.
-        </Typography>
-        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
-          <Button component={RouterLink} to="/expedientes" variant="contained" color="secondary" startIcon={<SearchIcon />}>
-            Ver expedientes
-          </Button>
-          <Button component={RouterLink} to="/expedientes" variant="outlined" startIcon={<AddCircleOutlineIcon />} sx={{ color: 'white', borderColor: 'rgba(255,255,255,.7)' }}>
-            Registrar cliente
-          </Button>
-        </Stack>
-      </Box>
-
-      <Box>
-        <Typography variant="h5" fontWeight={800}>Módulos principales</Typography>
-        <Typography color="text.secondary">Selecciona una opción para comenzar.</Typography>
-      </Box>
-
-      <Grid container spacing={2}>
-        {modules.map((module) => (
-          <Grid key={module.title} size={{ xs: 12, sm: 6 }}>
-            <Card sx={{ height: '100%', borderRadius: 3 }} variant="outlined">
-              <CardActionArea component={RouterLink} to={module.to} sx={{ height: '100%' }}>
-                <CardContent>
-                  <Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={2}>
-                    <Box sx={{ color: 'primary.main' }}>{module.icon}</Box>
-                    <Chip size="small" label={module.status} />
-                  </Stack>
-                  <Typography variant="h6" fontWeight={750} mt={2}>{module.title}</Typography>
-                  <Typography color="text.secondary" mt={0.5}>{module.description}</Typography>
-                </CardContent>
-              </CardActionArea>
-            </Card>
-          </Grid>
-        ))}
-      </Grid>
-    </Stack>
-  );
+  const [lista,setLista] = useState<Expediente[]>(cargarExpedientes);
+  useEffect(() => { const fn=()=>setLista(cargarExpedientes()); window.addEventListener('expedientes-actualizados',fn); return()=>window.removeEventListener('expedientes-actualizados',fn); },[]);
+  const datos = useMemo(() => {
+    const pendientes = lista.filter(e=>e.estado!=='Realizada');
+    const hoy = pendientes.filter(e=>diasHasta(e.fechaSolicitud)===0);
+    const proximos = pendientes.filter(e=>{const d=diasHasta(e.fechaSolicitud);return d>=1&&d<=7});
+    const vencidos = pendientes.filter(e=>diasHasta(e.fechaSolicitud)<0);
+    const mes = new Date().toISOString().slice(0,7);
+    const agenda = pendientes.filter(e=>e.fechaSolicitud?.startsWith(mes));
+    return {hoy,proximos,vencidos,agenda};
+  },[lista]);
+  const cards = [
+    {title:'Expedientes',icon:'👥',count:lista.length,color:'#1976d2',items:lista.map(e=>e.cliente)},
+    {title:'Solicitudes de desempleo para hoy',icon:'📍',count:datos.hoy.length,color:'#2563eb',items:datos.hoy.map(e=>e.cliente)},
+    {title:'Próximos 7 días',icon:'⌛',count:datos.proximos.length,color:'#f59e0b',items:datos.proximos.map(e=>`${e.cliente} · ${e.fechaSolicitud}`)},
+    {title:'Solicitudes vencidas',icon:'⚠️',count:datos.vencidos.length,color:'#ef4444',items:datos.vencidos.map(e=>`${e.cliente} · ${Math.abs(diasHasta(e.fechaSolicitud))} días`)},
+    {title:'Solicitudes prioritarias',icon:'⏰',count:datos.vencidos.length,color:'#9333ea',items:datos.vencidos.map(e=>e.cliente)},
+    {title:'Agenda mensual',icon:'📅',count:datos.agenda.length,color:'#0f9d8a',items:datos.agenda.map(e=>`${e.fechaSolicitud} · ${e.cliente}`)},
+  ];
+  return <Stack spacing={2.5}>
+    <Box><Typography variant="h4" fontWeight={900}>Panel de control</Typography><Typography color="text.secondary">Seguimiento automático de expedientes y solicitudes de retiro por desempleo.</Typography></Box>
+    <Box sx={{display:'grid',gridTemplateColumns:{xs:'repeat(2,1fr)',md:'repeat(3,1fr)'},gap:2}}>{cards.map(c=><Card key={c.title} variant="outlined" sx={{borderLeft:`7px solid ${c.color}`,borderRadius:4,minHeight:210}}><CardActionArea component={Link} to={c.title==='Agenda mensual'?'/agenda':'/expedientes'} sx={{height:'100%'}}><CardContent sx={{height:'100%'}}><Stack spacing={1.5} sx={{height:'100%'}}><Typography variant="h6" fontWeight={900}>{c.icon} {c.title}</Typography><Typography variant="h3" fontWeight={900}>{c.count}</Typography><LinearProgress variant="determinate" value={c.count?100:0}/><Box sx={{mt:'auto'}}>{c.items.slice(0,3).map((x,i)=><Chip key={i} label={x} size="small" sx={{mr:.5,mb:.5,maxWidth:'100%'}}/>)}<Typography fontWeight={700} mt={1}>{c.title==='Agenda mensual'?'Ver detalles':'Ver personas'} ▾</Typography></Box></Stack></CardContent></CardActionArea></Card>)}</Box>
+  </Stack>;
 }
