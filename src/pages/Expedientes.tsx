@@ -1,96 +1,50 @@
-import { Add, Search, UploadFile, WhatsApp } from '@mui/icons-material';
-import { Accordion, AccordionDetails, AccordionSummary, Alert, Box, Button, Card, CardContent, Chip, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, InputAdornment, MenuItem, Stack, TextField, Typography } from '@mui/material';
-import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Add, CameraAlt, ContentCopy, DeleteSweep, Restore, Search, UploadFile } from '@mui/icons-material';
+import { Accordion, AccordionDetails, AccordionSummary, Alert, Box, Button, Card, CardContent, Chip, Dialog, DialogActions, DialogContent, DialogTitle, InputAdornment, MenuItem, Stack, TextField, Typography } from '@mui/material';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import type { DocumentoCliente, EstadoExpediente, Expediente } from '../data';
-import { generarFolio, guardarExpediente, listarExpedientes } from '../firestoreStore';
+import { cargarExpedientes, generarFolio, guardarExpedientes } from '../expedientesStore';
 
-type Filtro = 'Todos' | 'Próximos' | 'Vencidos' | 'Incompletos';
+const tiposDocumento = ['Identificación frontal', 'Identificación trasera', 'Pagaré', 'Estado de cuenta', 'Constancia de situación fiscal'];
+const vacio = { cliente: '', curp: '', telefono: '', contrasenaAfore: '', estado: 'Pendiente' as EstadoExpediente, fechaInicio: '', fechaSolicitud: '', notas: '', fotoNombre: '', fotoDataUrl: '', archivos: [] as DocumentoCliente[] };
 
-const vacio = { cliente: '', curp: '', rfc: '', telefono: '', contrasenaAfore: '', estado: 'Activo' as EstadoExpediente, fechaInicio: '', fechaSolicitud: '', fechaCulminacion: '', notas: '', fotoNombre: '', archivos: [] as DocumentoCliente[] };
-const tiposDocumento = ['Identificación frontal', 'Identificación trasera', 'Pagaré', 'Estado de cuenta', 'Constancia fiscal'];
-
-function sumarDias(fecha: string, dias: number) {
-  if (!fecha) return '';
-  const [ano, mes, dia] = fecha.split('-').map(Number);
-  const valor = new Date(Date.UTC(ano, mes - 1, dia));
-  valor.setUTCDate(valor.getUTCDate() + dias);
-  return valor.toISOString().slice(0, 10);
-}
-
-function diferenciaDias(fecha?: string) {
-  if (!fecha) return Number.POSITIVE_INFINITY;
-  const hoy = new Date();
-  hoy.setHours(0, 0, 0, 0);
-  const destino = new Date(`${fecha}T00:00:00`);
-  return Math.round((destino.getTime() - hoy.getTime()) / 86400000);
-}
+function sumarDias(fecha: string, dias: number) { if (!fecha) return ''; const d = new Date(`${fecha}T00:00:00`); d.setDate(d.getDate() + dias); return d.toISOString().slice(0, 10); }
+function diasHasta(fecha?: string) { if (!fecha) return 9999; const h = new Date(); h.setHours(0,0,0,0); return Math.round((new Date(`${fecha}T00:00:00`).getTime() - h.getTime()) / 86400000); }
+function leerArchivo(file: File) { return new Promise<string>((resolve, reject) => { const r = new FileReader(); r.onload = () => resolve(String(r.result)); r.onerror = reject; r.readAsDataURL(file); }); }
 
 export function Component() {
-  const [expedientes, setExpedientes] = useState<Expediente[]>([]);
+  const [params] = useSearchParams();
+  const [lista, setLista] = useState<Expediente[]>(cargarExpedientes);
+  const [form, setForm] = useState(vacio);
+  const [abierto, setAbierto] = useState(params.get('nuevo') === '1');
   const [busqueda, setBusqueda] = useState('');
-  const [filtro, setFiltro] = useState<Filtro>('Todos');
-  const [abierto, setAbierto] = useState(false);
-  const [formulario, setFormulario] = useState(vacio);
-  const [cargando, setCargando] = useState(true);
-  const [guardando, setGuardando] = useState(false);
-  const [error, setError] = useState('');
+  const [mensaje, setMensaje] = useState('');
+  const restoreRef = useRef<HTMLInputElement>(null);
+  useEffect(() => { const fn = () => setLista(cargarExpedientes()); window.addEventListener('expedientes-actualizados', fn); return () => window.removeEventListener('expedientes-actualizados', fn); }, []);
 
-  useEffect(() => {
-    void listarExpedientes().then(setExpedientes).catch(() => setError('No fue posible cargar los expedientes. Revisa tu conexión y las reglas de Firestore.')).finally(() => setCargando(false));
-  }, []);
+  const filtrados = useMemo(() => lista.filter(e => [e.cliente,e.curp,e.telefono,e.id].some(v => String(v || '').toLowerCase().includes(busqueda.toLowerCase()))), [lista,busqueda]);
+  const ponerArchivo = async (tipo: string, file?: File) => { if (!file) return; const dataUrl = await leerArchivo(file); const archivo = { tipo, nombre: file.name, mime: file.type, dataUrl, fechaCarga: new Date().toISOString() }; setForm(f => ({ ...f, archivos: [...f.archivos.filter(a => a.tipo !== tipo), archivo] })); };
+  const ponerFoto = async (file?: File) => { if (!file) return; setForm(f => ({ ...f, fotoNombre: file.name })); const dataUrl = await leerArchivo(file); setForm(f => ({ ...f, fotoNombre: file.name, fotoDataUrl: dataUrl })); };
+  const copiar = async (texto: string, nombre: string) => { if (!texto) return; await navigator.clipboard.writeText(texto); setMensaje(`${nombre} copiada`); };
+  const guardar = () => { if (!form.cliente.trim()) return setMensaje('Escribe el nombre completo'); const nuevo: Expediente = { id: generarFolio(lista), cliente: form.cliente.trim().toUpperCase(), estado: form.estado, categoria: 'Retiro por desempleo', ultimaActualizacion: new Date().toISOString().slice(0,10), fechaCreacion: new Date().toISOString(), responsable: 'Diego Obed Valdes Guerrero', documentos: form.archivos.length, notas: form.notas, curp: form.curp.toUpperCase(), telefono: form.telefono, contrasenaAfore: form.contrasenaAfore, fechaInicio: form.fechaInicio, fechaSolicitud: form.fechaSolicitud, fotoNombre: form.fotoNombre, fotoDataUrl: form.fotoDataUrl, archivos: form.archivos }; const nuevos = [nuevo,...lista]; guardarExpedientes(nuevos); setLista(nuevos); setForm(vacio); setAbierto(false); setMensaje('Expediente guardado correctamente'); };
+  const limpiar = () => { if (confirm('¿Borrar todo lo capturado en este formulario?')) setForm(vacio); };
+  const respaldo = () => { const blob = new Blob([JSON.stringify(lista,null,2)], {type:'application/json'}); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `respaldo-expedientes-${new Date().toISOString().slice(0,10)}.json`; a.click(); URL.revokeObjectURL(a.href); };
+  const restaurar = async (file?: File) => { if (!file) return; try { const datos = JSON.parse(await file.text()) as Expediente[]; if (!Array.isArray(datos)) throw new Error(); if (!confirm(`Se restaurarán ${datos.length} expedientes. ¿Continuar?`)) return; guardarExpedientes(datos); setLista(datos); setMensaje('Respaldo restaurado correctamente'); } catch { setMensaje('El archivo de respaldo no es válido'); } };
 
-  const filtrados = useMemo(() => {
-    const texto = busqueda.trim().toLowerCase();
-    return expedientes.filter((e) => {
-      const coincide = !texto || [e.cliente, e.id, e.curp, e.rfc, e.telefono, e.estado].some((v) => v?.toLowerCase().includes(texto));
-      const dias = diferenciaDias(e.fechaSolicitud);
-      const incompleto = (e.documentos ?? 0) < tiposDocumento.length;
-      const categoria = filtro === 'Todos' || (filtro === 'Próximos' && dias >= 0 && dias <= 7) || (filtro === 'Vencidos' && dias < 0) || (filtro === 'Incompletos' && incompleto);
-      return coincide && categoria;
-    });
-  }, [busqueda, expedientes, filtro]);
+  return <Stack spacing={2.5}>
+    <Stack direction={{xs:'column',sm:'row'}} spacing={1.5}><Button variant="contained" size="large" startIcon={<Add/>} onClick={() => setAbierto(true)}>Nuevo expediente</Button><Button variant="outlined" size="large" startIcon={<Restore/>} onClick={() => restoreRef.current?.click()}>Restaurar</Button><Button variant="outlined" onClick={respaldo}>Crear respaldo</Button><input ref={restoreRef} hidden type="file" accept="application/json,.json" onChange={e => void restaurar(e.target.files?.[0])}/></Stack>
+    <TextField value={busqueda} onChange={e => setBusqueda(e.target.value)} placeholder="Buscar por nombre, CURP, teléfono o folio" slotProps={{ input: { startAdornment: <InputAdornment position="start"><Search/></InputAdornment> } }}/>
+    <Typography variant="h5" fontWeight={900}>Expedientes guardados: {lista.length}</Typography>
+    <Box sx={{display:'grid',gridTemplateColumns:{xs:'1fr',md:'repeat(2,1fr)'},gap:2}}>{filtrados.map(e => { const d = diasHasta(e.fechaSolicitud); return <Card key={e.id} variant="outlined"><CardContent><Stack spacing={1.2}><Stack direction="row" justifyContent="space-between"><Typography fontWeight={900}>{e.cliente}</Typography><Chip size="small" label={e.estado === 'Realizada' ? 'Realizada' : d < 0 ? 'Vencida' : d === 0 ? 'Para hoy' : d <= 7 ? 'Próxima' : 'Pendiente'} color={e.estado === 'Realizada' ? 'success' : d < 0 ? 'error' : d <= 7 ? 'warning' : 'default'}/></Stack><Typography color="text.secondary">{e.id} · Creado {e.fechaCreacion?.slice(0,10) || e.ultimaActualizacion}</Typography><Typography>Solicitud: {e.fechaSolicitud || 'Sin fecha'}</Typography><Typography>Documentos: {e.documentos}/5</Typography><Button component={Link} to={`/expedientes/${e.id}`} variant="contained">Abrir expediente</Button></Stack></CardContent></Card>; })}</Box>
 
-  const crear = async () => {
-    if (!formulario.cliente.trim()) return;
-    setGuardando(true); setError('');
-    const nuevo: Expediente = {
-      id: generarFolio(expedientes), cliente: formulario.cliente.trim(), estado: formulario.estado,
-      categoria: 'Ayuda por desempleo', ultimaActualizacion: new Date().toISOString().slice(0, 10),
-      responsable: 'Asesoría', documentos: formulario.archivos.length, notas: formulario.notas, curp: formulario.curp.toUpperCase(),
-      rfc: formulario.rfc.toUpperCase(), telefono: formulario.telefono, contrasenaAfore: formulario.contrasenaAfore,
-      fechaInicio: formulario.fechaInicio, fechaSolicitud: formulario.fechaSolicitud, fechaCulminacion: formulario.fechaCulminacion,
-      fotoNombre: formulario.fotoNombre, archivos: formulario.archivos,
-    };
-    try {
-      await guardarExpediente(nuevo);
-      setExpedientes((actuales) => [nuevo, ...actuales]);
-      setFormulario(vacio); setAbierto(false);
-    } catch { setError('No fue posible guardar el expediente en Firebase.'); }
-    finally { setGuardando(false); }
-  };
-
-  const seleccionarDocumento = (tipo: string, archivo?: File) => {
-    if (!archivo) return;
-    const restantes = formulario.archivos.filter((item) => item.tipo !== tipo);
-    setFormulario({ ...formulario, archivos: [...restantes, { tipo, nombre: archivo.name, mime: archivo.type }] });
-  };
-
-  return <Stack spacing={3}>
-    <Box><Typography variant="h4" sx={{ fontWeight: 700 }}>Expedientes de clientes</Typography><Typography color="text.secondary">Migración funcional de DV Control v1.8.3: búsqueda, filtros, fotografía, documentos y cálculo automático de fechas.</Typography></Box>
-    <Alert severity="info">La fecha para realizar la solicitud se calcula automáticamente 46 días después de la fecha de inicio.</Alert>
-    {error && <Alert severity="error">{error}</Alert>}
-    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}><TextField fullWidth value={busqueda} onChange={(e) => setBusqueda(e.target.value)} placeholder="Buscar por nombre, folio, CURP, RFC o teléfono" slotProps={{ input: { startAdornment: <InputAdornment position="start"><Search /></InputAdornment> } }}/><Button variant="contained" startIcon={<Add />} onClick={() => setAbierto(true)}>Nuevo expediente</Button></Stack>
-    <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">{(['Todos','Próximos','Vencidos','Incompletos'] as Filtro[]).map((item) => <Chip key={item} label={item} clickable color={filtro === item ? 'primary' : 'default'} onClick={() => setFiltro(item)}/>)}</Stack>
-    {cargando ? <Box display="grid" sx={{ placeItems: 'center', py: 6 }}><CircularProgress /></Box> : <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' }, gap: 2 }}>{filtrados.map((e) => { const dias = diferenciaDias(e.fechaSolicitud); return <Card key={e.id}><CardContent><Stack spacing={1.5}><Stack direction="row" justifyContent="space-between"><Typography fontWeight={700}>{e.id}</Typography><Chip label={dias < 0 ? 'Vencido' : dias <= 7 ? 'Próximo' : e.estado} color={dias < 0 ? 'error' : dias <= 7 ? 'warning' : e.estado === 'Activo' ? 'success' : 'default'} size="small"/></Stack><Typography variant="h6">{e.cliente}</Typography><Typography color="text.secondary">{e.curp || 'CURP pendiente'}</Typography><Typography variant="body2">Solicitud: {e.fechaSolicitud || 'Sin fecha'}</Typography><Typography variant="body2">Documentos: {e.documentos ?? 0} de {tiposDocumento.length}</Typography><Stack direction="row" spacing={1}><Button component={Link} to={`/expedientes/${e.id}`} variant="outlined">Abrir</Button>{e.telefono && <Button href={`https://wa.me/52${e.telefono.replace(/\D/g, '')}`} target="_blank" startIcon={<WhatsApp/>}>WhatsApp</Button>}</Stack></Stack></CardContent></Card>; })}</Box>}
-    {!cargando && !filtrados.length && <Typography color="text.secondary">No se encontraron expedientes.</Typography>}
-
-    <Dialog open={abierto} onClose={() => !guardando && setAbierto(false)} fullWidth maxWidth="md"><DialogTitle>Nuevo expediente</DialogTitle><DialogContent><Stack spacing={1.5} sx={{ mt: 1 }}>
-      <Accordion defaultExpanded><AccordionSummary><Typography fontWeight={700}>📷 Fotografía</Typography></AccordionSummary><AccordionDetails><Button component="label" variant="outlined" startIcon={<UploadFile/>}>Seleccionar o tomar fotografía<input hidden type="file" accept="image/*" capture="environment" onChange={(e) => setFormulario({ ...formulario, fotoNombre: e.target.files?.[0]?.name ?? '' })}/></Button>{formulario.fotoNombre && <Typography variant="body2" sx={{ mt: 1 }}>{formulario.fotoNombre}</Typography>}</AccordionDetails></Accordion>
-      <Accordion defaultExpanded><AccordionSummary><Typography fontWeight={700}>👤 Datos personales</Typography></AccordionSummary><AccordionDetails><Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2,1fr)' }, gap: 2 }}><TextField label="Nombre completo" required value={formulario.cliente} onChange={(e) => setFormulario({ ...formulario, cliente: e.target.value })}/><TextField label="CURP" inputProps={{ maxLength: 18 }} value={formulario.curp} onChange={(e) => setFormulario({ ...formulario, curp: e.target.value.toUpperCase() })}/><TextField label="RFC" value={formulario.rfc} onChange={(e) => setFormulario({ ...formulario, rfc: e.target.value.toUpperCase() })}/><TextField label="Teléfono / WhatsApp" value={formulario.telefono} onChange={(e) => setFormulario({ ...formulario, telefono: e.target.value })}/><TextField label="Contraseña AFORE" type="password" value={formulario.contrasenaAfore} onChange={(e) => setFormulario({ ...formulario, contrasenaAfore: e.target.value })}/><TextField select label="Estado" value={formulario.estado} onChange={(e) => setFormulario({ ...formulario, estado: e.target.value as EstadoExpediente })}>{['Activo','En revisión','Archivado'].map((v) => <MenuItem key={v} value={v}>{v}</MenuItem>)}</TextField></Box></AccordionDetails></Accordion>
-      <Accordion defaultExpanded><AccordionSummary><Typography fontWeight={700}>📅 Información del trámite</Typography></AccordionSummary><AccordionDetails><Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(3,1fr)' }, gap: 2 }}><TextField label="Fecha de inicio" type="date" InputLabelProps={{ shrink: true }} value={formulario.fechaInicio} onChange={(e) => { const fechaInicio = e.target.value; setFormulario({ ...formulario, fechaInicio, fechaSolicitud: sumarDias(fechaInicio, 46), fechaCulminacion: sumarDias(fechaInicio, 49) }); }}/><TextField label="Fecha para solicitud" type="date" InputLabelProps={{ shrink: true }} value={formulario.fechaSolicitud} onChange={(e) => setFormulario({ ...formulario, fechaSolicitud: e.target.value })}/><TextField label="Fecha de culminación" type="date" InputLabelProps={{ shrink: true }} value={formulario.fechaCulminacion} onChange={(e) => setFormulario({ ...formulario, fechaCulminacion: e.target.value })}/></Box></AccordionDetails></Accordion>
-      <Accordion><AccordionSummary><Typography fontWeight={700}>📁 Documentos ({formulario.archivos.length}/{tiposDocumento.length})</Typography></AccordionSummary><AccordionDetails><Stack spacing={1.5}>{tiposDocumento.map((tipo) => <Button key={tipo} component="label" variant="outlined" startIcon={<UploadFile/>} sx={{ justifyContent: 'flex-start' }}>{tipo}{formulario.archivos.find((a) => a.tipo === tipo)?.nombre ? `: ${formulario.archivos.find((a) => a.tipo === tipo)?.nombre}` : ''}<input hidden type="file" accept="image/*,.pdf" onChange={(e) => seleccionarDocumento(tipo, e.target.files?.[0])}/></Button>)}</Stack></AccordionDetails></Accordion>
-      <Accordion><AccordionSummary><Typography fontWeight={700}>🗒️ Notas</Typography></AccordionSummary><AccordionDetails><TextField fullWidth label="Nota" multiline minRows={3} inputProps={{ maxLength: 100 }} helperText={`${formulario.notas.length} de 100`} value={formulario.notas} onChange={(e) => setFormulario({ ...formulario, notas: e.target.value })}/></AccordionDetails></Accordion>
-    </Stack></DialogContent><DialogActions><Button disabled={guardando} onClick={() => setAbierto(false)}>Cancelar</Button><Button disabled={guardando || !formulario.cliente.trim()} variant="contained" onClick={() => void crear()}>{guardando ? 'Guardando…' : 'Guardar expediente'}</Button></DialogActions></Dialog>
+    <Dialog open={abierto} onClose={() => setAbierto(false)} fullScreen><DialogTitle sx={{fontWeight:900}}>➕ Nuevo expediente</DialogTitle><DialogContent><Stack spacing={1.5} sx={{mt:1}}>
+      <Accordion defaultExpanded><AccordionSummary><Typography fontWeight={900}>📷 Fotografía del cliente</Typography></AccordionSummary><AccordionDetails><Stack spacing={1.2}><Stack direction={{xs:'column',sm:'row'}} spacing={1}><Button component="label" variant="outlined" startIcon={<CameraAlt/>}>Abrir cámara<input hidden type="file" accept="image/*" capture="environment" onChange={e => void ponerFoto(e.target.files?.[0])}/></Button><Button component="label" variant="outlined" startIcon={<UploadFile/>}>Seleccionar archivo<input hidden type="file" accept="image/*,.pdf" onChange={e => void ponerFoto(e.target.files?.[0])}/></Button></Stack>{form.fotoDataUrl && form.fotoDataUrl.startsWith('data:image') && <Box component="img" src={form.fotoDataUrl} sx={{width:120,height:120,objectFit:'cover',borderRadius:3}}/>}<Chip label={form.fotoNombre ? 'Fotografía agregada' : 'Fotografía pendiente'} color={form.fotoNombre ? 'success' : 'default'}/></Stack></AccordionDetails></Accordion>
+      <Accordion><AccordionSummary><Typography fontWeight={900}>👤 Datos personales</Typography></AccordionSummary><AccordionDetails><Stack spacing={2}><TextField required label="Nombre completo" value={form.cliente} onChange={e => setForm({...form,cliente:e.target.value.toUpperCase()})}/><Stack direction="row" spacing={1}><TextField fullWidth label="CURP" inputProps={{maxLength:18}} value={form.curp} onChange={e => setForm({...form,curp:e.target.value.toUpperCase()})}/><Button variant="outlined" onClick={() => void copiar(form.curp,'CURP')}><ContentCopy/></Button></Stack><Stack direction="row" spacing={1}><TextField fullWidth label="Contraseña AFORE" value={form.contrasenaAfore} onChange={e => setForm({...form,contrasenaAfore:e.target.value})}/><Button variant="outlined" onClick={() => void copiar(form.contrasenaAfore,'Contraseña')}><ContentCopy/></Button></Stack><TextField label="Teléfono / WhatsApp" inputMode="numeric" value={form.telefono} onChange={e => setForm({...form,telefono:e.target.value.replace(/\D/g,'').slice(0,10)})}/></Stack></AccordionDetails></Accordion>
+      <Accordion><AccordionSummary><Typography fontWeight={900}>📅 Fechas del trámite</Typography></AccordionSummary><AccordionDetails><Stack spacing={2}><TextField label="Fecha de inicio del trámite" type="date" InputLabelProps={{shrink:true}} value={form.fechaInicio} onChange={e => {const fechaInicio=e.target.value;setForm({...form,fechaInicio,fechaSolicitud:sumarDias(fechaInicio,46)})}}/><TextField label="Fecha de solicitud de retiro por desempleo" type="date" InputLabelProps={{shrink:true}} value={form.fechaSolicitud} disabled/><TextField select label="Estado de la solicitud" value={form.estado} onChange={e => setForm({...form,estado:e.target.value as EstadoExpediente})}>{['Pendiente','Activa','Realizada','Vencida'].map(v => <MenuItem key={v} value={v}>{v}</MenuItem>)}</TextField></Stack></AccordionDetails></Accordion>
+      <Accordion><AccordionSummary><Typography fontWeight={900}>📁 Documentos personales · {form.archivos.length}/5</Typography></AccordionSummary><AccordionDetails><Stack spacing={2}>{tiposDocumento.map((tipo,i) => {const cargado=form.archivos.find(a=>a.tipo===tipo);return <Card key={tipo} variant="outlined"><CardContent><Stack spacing={1}><Typography fontWeight={800}>{i+1}. {tipo}</Typography><Stack direction={{xs:'column',sm:'row'}} spacing={1}><Button component="label" variant="outlined" startIcon={<CameraAlt/>}>Abrir cámara<input hidden type="file" accept="image/*" capture="environment" onChange={e => void ponerArchivo(tipo,e.target.files?.[0])}/></Button><Button component="label" variant="outlined" startIcon={<UploadFile/>}>Seleccionar archivo<input hidden type="file" accept="image/*,.pdf" onChange={e => void ponerArchivo(tipo,e.target.files?.[0])}/></Button></Stack><Chip label={cargado ? `${tipo} cargado` : `${tipo} pendiente`} color={cargado ? 'success' : 'default'}/></Stack></CardContent></Card>})}</Stack></AccordionDetails></Accordion>
+      <Accordion><AccordionSummary><Typography fontWeight={900}>📝 Notas</Typography></AccordionSummary><AccordionDetails><TextField fullWidth multiline minRows={4} label="Observaciones adicionales" inputProps={{maxLength:100}} helperText={`${form.notas.length} de 100`} value={form.notas} onChange={e => setForm({...form,notas:e.target.value})}/></AccordionDetails></Accordion>
+      {mensaje && <Alert severity="info">{mensaje}</Alert>}
+    </Stack></DialogContent><DialogActions sx={{p:2}}><Button color="error" startIcon={<DeleteSweep/>} onClick={limpiar}>Borrar</Button><Button onClick={() => setAbierto(false)}>Cerrar</Button><Button variant="contained" onClick={guardar}>Guardar</Button></DialogActions></Dialog>
+    {mensaje && !abierto && <Alert severity="info">{mensaje}</Alert>}
   </Stack>;
 }
