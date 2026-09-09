@@ -3,12 +3,13 @@ package com.vaguer.virtualcammobile;
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
-import android.provider.Settings;
+import android.os.Message;
 import android.util.Base64;
 import android.view.Gravity;
 import android.view.View;
@@ -18,6 +19,7 @@ import android.webkit.PermissionRequest;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
+import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.ArrayAdapter;
@@ -49,6 +51,7 @@ public class MainActivity extends Activity {
     private static final int REQ_PERMS = 2001;
     private static final long MAX_PHOTO = 12L * 1024L * 1024L;
     private static final long MAX_VIDEO = 16L * 1024L * 1024L;
+    private static final String AFORE_HOME = "https://www.aforeweb.com.mx/";
 
     private WebView webView;
     private EditText urlEdit;
@@ -63,7 +66,6 @@ public class MainActivity extends Activity {
     private ScriptHandler scriptHandler;
     private String fallbackScript;
     private PermissionRequest pendingPermission;
-
     private WebViewAssetLoader assetLoader;
 
     @Override
@@ -74,7 +76,7 @@ public class MainActivity extends Activity {
                 .build();
         setContentView(buildUi());
         configureWebView();
-        loadTestPage();
+        loadAforeWeb();
     }
 
     private View buildUi() {
@@ -88,25 +90,34 @@ public class MainActivity extends Activity {
         top.setGravity(Gravity.CENTER_VERTICAL);
 
         Button back = button("←");
-        back.setOnClickListener(v -> { if (webView != null && webView.canGoBack()) webView.goBack(); });
-        top.addView(back, new LinearLayout.LayoutParams(dp(48), dp(48)));
+        back.setOnClickListener(v -> {
+            if (webView != null && webView.canGoBack()) webView.goBack();
+        });
+        top.addView(back, new LinearLayout.LayoutParams(dp(44), dp(48)));
 
         urlEdit = new EditText(this);
         urlEdit.setSingleLine(true);
         urlEdit.setHint("https://sitio.com");
-        urlEdit.setTextSize(14);
+        urlEdit.setTextSize(13);
         urlEdit.setImeOptions(EditorInfo.IME_ACTION_GO);
         urlEdit.setOnEditorActionListener((v, actionId, event) -> {
-            if (actionId == EditorInfo.IME_ACTION_GO) { navigate(); return true; }
+            if (actionId == EditorInfo.IME_ACTION_GO) {
+                navigate();
+                return true;
+            }
             return false;
         });
         LinearLayout.LayoutParams urlLp = new LinearLayout.LayoutParams(0, dp(48), 1f);
-        urlLp.setMargins(dp(4), 0, dp(4), 0);
+        urlLp.setMargins(dp(3), 0, dp(3), 0);
         top.addView(urlEdit, urlLp);
 
         Button go = button("IR");
         go.setOnClickListener(v -> navigate());
-        top.addView(go, new LinearLayout.LayoutParams(dp(58), dp(48)));
+        top.addView(go, new LinearLayout.LayoutParams(dp(50), dp(48)));
+
+        Button external = button("↗");
+        external.setOnClickListener(v -> openCurrentInSystemBrowser());
+        top.addView(external, new LinearLayout.LayoutParams(dp(48), dp(48)));
         root.addView(top);
 
         webView = new WebView(this);
@@ -114,9 +125,9 @@ public class MainActivity extends Activity {
                 LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f));
 
         status = new TextView(this);
-        status.setText("Fuente: ninguna");
+        status.setText("Abriendo AforeWeb…");
         status.setTextColor(Color.BLACK);
-        status.setTextSize(14);
+        status.setTextSize(13);
         status.setPadding(dp(4), dp(4), dp(4), dp(3));
         root.addView(status);
 
@@ -146,6 +157,11 @@ public class MainActivity extends Activity {
         Button test = button("PRUEBA");
         test.setOnClickListener(v -> loadTestPage());
         sources.addView(test);
+
+        Button afore = button("AFORE");
+        afore.setOnClickListener(v -> loadAforeWeb());
+        sources.addView(afore);
+
         sourceScroll.addView(sources);
         root.addView(sourceScroll, new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, dp(48)));
@@ -175,9 +191,11 @@ public class MainActivity extends Activity {
 
         LinearLayout actions = new LinearLayout(this);
         actions.setOrientation(LinearLayout.HORIZONTAL);
+
         Button start = button("▶ ACTIVAR");
         start.setOnClickListener(v -> startVirtual());
         actions.addView(start, new LinearLayout.LayoutParams(0, dp(50), 1f));
+
         Button stop = button("■ DETENER");
         stop.setOnClickListener(v -> {
             stopVirtual(true);
@@ -193,21 +211,33 @@ public class MainActivity extends Activity {
         Button b = new Button(this);
         b.setText(text);
         b.setAllCaps(false);
-        b.setTextSize(14);
+        b.setTextSize(13);
         return b;
     }
 
     @SuppressLint("SetJavaScriptEnabled")
     private void configureWebView() {
-        webView.getSettings().setJavaScriptEnabled(true);
-        webView.getSettings().setDomStorageEnabled(true);
-        webView.getSettings().setMediaPlaybackRequiresUserGesture(false);
-        webView.getSettings().setAllowFileAccess(false);
-        webView.getSettings().setAllowContentAccess(false);
-        webView.getSettings().setBuiltInZoomControls(true);
-        webView.getSettings().setDisplayZoomControls(false);
-        CookieManager.getInstance().setAcceptCookie(true);
-        CookieManager.getInstance().setAcceptThirdPartyCookies(webView, true);
+        WebSettings s = webView.getSettings();
+        s.setJavaScriptEnabled(true);
+        s.setDomStorageEnabled(true);
+        s.setDatabaseEnabled(true);
+        s.setMediaPlaybackRequiresUserGesture(false);
+        s.setAllowFileAccess(false);
+        s.setAllowContentAccess(true);
+        s.setBuiltInZoomControls(true);
+        s.setDisplayZoomControls(false);
+        s.setSupportMultipleWindows(true);
+        s.setJavaScriptCanOpenWindowsAutomatically(true);
+        s.setLoadsImagesAutomatically(true);
+        s.setLoadWithOverviewMode(true);
+        s.setUseWideViewPort(true);
+        s.setCacheMode(WebSettings.LOAD_DEFAULT);
+        s.setMixedContentMode(WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE);
+        s.setUserAgentString(makeChromeLikeUserAgent());
+
+        CookieManager cm = CookieManager.getInstance();
+        cm.setAcceptCookie(true);
+        cm.setAcceptThirdPartyCookies(webView, true);
 
         webView.setWebViewClient(new WebViewClient() {
             @Override
@@ -217,10 +247,30 @@ public class MainActivity extends Activity {
             }
 
             @Override
+            public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+                Uri uri = request.getUrl();
+                String scheme = uri.getScheme();
+                if (scheme == null || "http".equalsIgnoreCase(scheme) || "https".equalsIgnoreCase(scheme)) {
+                    return false;
+                }
+                try {
+                    startActivity(new Intent(Intent.ACTION_VIEW, uri));
+                } catch (Exception e) {
+                    Toast.makeText(MainActivity.this, "No hay una app para abrir este enlace.", Toast.LENGTH_SHORT).show();
+                }
+                return true;
+            }
+
+            @Override
             public void onPageFinished(WebView view, String url) {
                 super.onPageFinished(view, url);
                 urlEdit.setText(url);
-                if (fallbackScript != null) view.evaluateJavascript(fallbackScript, null);
+                if (fallbackScript != null && !isAforeWebUrl(url)) {
+                    view.evaluateJavascript(fallbackScript, null);
+                }
+                if (isAforeWebUrl(url)) {
+                    status.setText("AforeWeb cargado. Si el portal pide cámara, se usará la cámara real.");
+                }
             }
         });
 
@@ -229,7 +279,33 @@ public class MainActivity extends Activity {
             public void onPermissionRequest(PermissionRequest request) {
                 runOnUiThread(() -> handlePermissionRequest(request));
             }
+
+            @Override
+            public boolean onCreateWindow(WebView view, boolean isDialog, boolean isUserGesture, Message resultMsg) {
+                WebView popup = new WebView(MainActivity.this);
+                popup.getSettings().setJavaScriptEnabled(true);
+                popup.setWebViewClient(new WebViewClient() {
+                    @Override
+                    public boolean shouldOverrideUrlLoading(WebView v, WebResourceRequest req) {
+                        String u = req.getUrl().toString();
+                        webView.loadUrl(u);
+                        v.destroy();
+                        return true;
+                    }
+                });
+                WebView.WebViewTransport transport = (WebView.WebViewTransport) resultMsg.obj;
+                transport.setWebView(popup);
+                resultMsg.sendToTarget();
+                return true;
+            }
         });
+    }
+
+    private String makeChromeLikeUserAgent() {
+        String ua = WebSettings.getDefaultUserAgent(this);
+        ua = ua.replace("; wv", "");
+        ua = ua.replace("Version/4.0 ", "");
+        return ua;
     }
 
     private void pickMedia(String mime, int requestCode) {
@@ -282,14 +358,45 @@ public class MainActivity extends Activity {
         String url = urlEdit.getText().toString().trim();
         if (url.isEmpty()) return;
         if (!url.startsWith("https://") && !url.startsWith("http://")) url = "https://" + url;
-        if (url.startsWith("http://")) {
-            Toast.makeText(this, "Usa HTTPS para las funciones de cámara.", Toast.LENGTH_LONG).show();
-        }
         webView.loadUrl(url);
+    }
+
+    private void loadAforeWeb() {
+        stopVirtual(false);
+        selectedMode = null;
+        selectedDataUrl = null;
+        selectedLabel = null;
+        status.setText("Abriendo AforeWeb…");
+        webView.loadUrl(AFORE_HOME);
     }
 
     private void loadTestPage() {
         webView.loadUrl("https://appassets.androidplatform.net/assets/test_camera.html");
+    }
+
+    private void openCurrentInSystemBrowser() {
+        String url = webView != null ? webView.getUrl() : null;
+        if (url == null || url.startsWith("https://appassets.androidplatform.net/")) {
+            url = AFORE_HOME;
+        }
+        try {
+            Intent i = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+            startActivity(i);
+        } catch (ActivityNotFoundException e) {
+            Toast.makeText(this, "No se encontró un navegador instalado.", Toast.LENGTH_LONG).show();
+        }
+    }
+
+    private boolean isAforeWebUrl(String url) {
+        if (url == null) return false;
+        try {
+            String host = Uri.parse(url).getHost();
+            if (host == null) return false;
+            host = host.toLowerCase();
+            return host.equals("aforeweb.com.mx") || host.endsWith(".aforeweb.com.mx");
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     private int[] selectedResolution() {
@@ -300,10 +407,18 @@ public class MainActivity extends Activity {
     }
 
     private void startVirtual() {
+        String currentUrl = webView != null ? webView.getUrl() : null;
+        if (isAforeWebUrl(currentUrl)) {
+            Toast.makeText(this, "En AforeWeb se usa la cámara real del teléfono para autenticación.", Toast.LENGTH_LONG).show();
+            status.setText("AforeWeb: cámara real habilitada para procesos de autenticación.");
+            return;
+        }
+
         if (selectedMode == null || selectedDataUrl == null) {
             Toast.makeText(this, "Primero selecciona una foto o un video.", Toast.LENGTH_SHORT).show();
             return;
         }
+
         int[] r = selectedResolution();
         String fit = fitSpinner.getSelectedItemPosition() == 0 ? "cover" : "contain";
         String script = buildVirtualScript(selectedMode, selectedDataUrl, r[0], r[1], 30, fit, micCheck.isChecked());
@@ -356,9 +471,16 @@ public class MainActivity extends Activity {
     private void handlePermissionRequest(PermissionRequest request) {
         List<String> needed = new ArrayList<>();
         for (String res : request.getResources()) {
-            if (PermissionRequest.RESOURCE_VIDEO_CAPTURE.equals(res) && checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) needed.add(Manifest.permission.CAMERA);
-            if (PermissionRequest.RESOURCE_AUDIO_CAPTURE.equals(res) && checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) needed.add(Manifest.permission.RECORD_AUDIO);
+            if (PermissionRequest.RESOURCE_VIDEO_CAPTURE.equals(res)
+                    && checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+                needed.add(Manifest.permission.CAMERA);
+            }
+            if (PermissionRequest.RESOURCE_AUDIO_CAPTURE.equals(res)
+                    && checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+                needed.add(Manifest.permission.RECORD_AUDIO);
+            }
         }
+
         if (needed.isEmpty()) {
             grantKnown(request);
         } else {
@@ -371,10 +493,17 @@ public class MainActivity extends Activity {
     private void grantKnown(PermissionRequest request) {
         List<String> allow = new ArrayList<>();
         for (String res : request.getResources()) {
-            if (PermissionRequest.RESOURCE_VIDEO_CAPTURE.equals(res) && checkSelfPermission(Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) allow.add(res);
-            if (PermissionRequest.RESOURCE_AUDIO_CAPTURE.equals(res) && checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) allow.add(res);
+            if (PermissionRequest.RESOURCE_VIDEO_CAPTURE.equals(res)
+                    && checkSelfPermission(Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+                allow.add(res);
+            }
+            if (PermissionRequest.RESOURCE_AUDIO_CAPTURE.equals(res)
+                    && checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+                allow.add(res);
+            }
         }
-        if (allow.isEmpty()) request.deny(); else request.grant(allow.toArray(new String[0]));
+        if (allow.isEmpty()) request.deny();
+        else request.grant(allow.toArray(new String[0]));
     }
 
     @Override
@@ -389,7 +518,8 @@ public class MainActivity extends Activity {
 
     @Override
     public void onBackPressed() {
-        if (webView != null && webView.canGoBack()) webView.goBack(); else super.onBackPressed();
+        if (webView != null && webView.canGoBack()) webView.goBack();
+        else super.onBackPressed();
     }
 
     @Override
