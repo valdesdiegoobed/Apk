@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Prueba de cámara</title>
+<style>
+body{font-family:system-ui,sans-serif;background:#111;color:#fff;margin:0;padding:18px}
+h1{font-size:22px;margin:0 0 12px}video{width:100%;background:#000;border-radius:12px;aspect-ratio:16/9;object-fit:contain}button{font-size:16px;padding:12px 14px;margin:10px 6px 10px 0;border:0;border-radius:10px}pre{white-space:pre-wrap;background:#222;padding:12px;border-radius:10px;font-size:12px}
+</style>
+</head>
+<body>
+<h1>Prueba de VirtualCam Mobile</h1>
+<p>Selecciona Foto o Video abajo, pulsa <b>ACTIVAR</b> y luego toca <b>Iniciar cámara</b>.</p>
+<video id="preview" autoplay playsinline muted></video>
+<div><button id="start">Iniciar cámara</button><button id="stop">Detener</button><button id="devices">Ver dispositivos</button></div>
+<pre id="log">Listo.</pre>
+<script>
+let current;
+const log=(...x)=>document.querySelector('#log').textContent=x.join('\n');
+document.querySelector('#start').onclick=async()=>{try{current?.getTracks().forEach(t=>t.stop());current=await navigator.mediaDevices.getUserMedia({video:true,audio:false});document.querySelector('#preview').srcObject=current;const t=current.getVideoTracks()[0];log('OK: stream recibido',JSON.stringify(t?.getSettings?.()||{},null,2));}catch(e){log('ERROR',e.name+': '+e.message)}};
+document.querySelector('#stop').onclick=()=>{current?.getTracks().forEach(t=>t.stop());current=null;document.querySelector('#preview').srcObject=null;log('Detenido.')};
+document.querySelector('#devices').onclick=async()=>{try{const ds=await navigator.mediaDevices.enumerateDevices();log(ds.map(d=>`${d.kind} | ${d.label||'(sin etiqueta)'} | ${d.deviceId}`).join('\n'));}catch(e){log('ERROR',e.name+': '+e.message)}};
+</script>
+</body>
+</html>
