@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>Cámara virtual de prueba</title>
+<style>
+  :root{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:#202124;background:#f7f8fa}
+  *{box-sizing:border-box} body{margin:0;padding:22px;background:#f7f8fa}
+  .wrap{max-width:720px;margin:0 auto}.badge{display:inline-block;background:#eaf0ff;color:#2457d6;border-radius:999px;padding:7px 11px;font-weight:700;font-size:12px;letter-spacing:.04em}
+  h1{font-size:27px;margin:14px 0 8px}p{color:#5f6368;line-height:1.45;margin:0 0 18px}
+  .notice{background:#fff8e6;border:1px solid #f0d58d;border-radius:14px;padding:13px 14px;color:#5d4b19;font-size:14px;margin-bottom:16px}
+  .panel{background:white;border:1px solid #e4e7ec;border-radius:18px;padding:16px;box-shadow:0 2px 8px rgba(0,0,0,.03)}
+  .buttons{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}.btn{border:0;border-radius:12px;padding:13px 10px;font-size:15px;font-weight:700;color:white;background:#2457d6}.btn.video{background:#0b7a53}.btn.stop{background:#62666d;width:100%;margin-top:10px}
+  input{display:none}.stage{position:relative;width:100%;aspect-ratio:3/4;background:#101216;border-radius:16px;overflow:hidden;display:grid;place-items:center}
+  video,canvas,img{max-width:100%;max-height:100%}.preview{width:100%;height:100%;object-fit:contain;background:#101216}
+  #sourceVideo,#sourceImage,#canvas{display:none}.status{font-size:14px;color:#5f6368;margin-top:12px;min-height:20px}.ok{color:#0b7a53;font-weight:700}.error{color:#b42318;font-weight:700}
+  .meta{margin-top:16px;font-size:12px;color:#858b93;text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <span class="badge">MODO DE PRUEBA</span>
+  <h1>Cámara virtual interna</h1>
+  <p>Selecciona una foto o un video. Esta página interna lo transforma en un flujo de video para comprobar la función.</p>
+  <div class="notice"><strong>Importante:</strong> este modo está aislado dentro de la aplicación. No reemplaza la cámara de Chrome ni modifica AforeWeb.</div>
+  <div class="panel">
+    <div class="buttons">
+      <button class="btn" onclick="photoInput.click()">Elegir foto</button>
+      <button class="btn video" onclick="videoInput.click()">Elegir video</button>
+    </div>
+    <input id="photoInput" type="file" accept="image/*" />
+    <input id="videoInput" type="file" accept="video/*" />
+    <div class="stage"><video id="preview" class="preview" autoplay muted playsinline></video></div>
+    <img id="sourceImage" alt="" />
+    <video id="sourceVideo" muted loop playsinline></video>
+    <canvas id="canvas" width="720" height="960"></canvas>
+    <button class="btn stop" onclick="stopTest()">Detener prueba</button>
+    <div id="status" class="status">Esperando una foto o un video.</div>
+  </div>
+  <div class="meta">Salida de prueba: 720 × 960 • 30 FPS cuando captureStream está disponible</div>
+</div>
+<script>
+const photoInput=document.getElementById('photoInput');
+const videoInput=document.getElementById('videoInput');
+const img=document.getElementById('sourceImage');
+const srcVideo=document.getElementById('sourceVideo');
+const preview=document.getElementById('preview');
+const canvas=document.getElementById('canvas');
+const ctx=canvas.getContext('2d');
+const statusEl=document.getElementById('status');
+let stream=null, raf=0, objectUrl=null, mode=null;
+
+function status(msg, cls=''){statusEl.className='status '+cls;statusEl.textContent=msg}
+function cleanupUrl(){if(objectUrl){URL.revokeObjectURL(objectUrl);objectUrl=null}}
+function drawContained(el){
+  const cw=canvas.width,ch=canvas.height;
+  const sw=(el.videoWidth||el.naturalWidth||cw), sh=(el.videoHeight||el.naturalHeight||ch);
+  const scale=Math.min(cw/sw,ch/sh), dw=sw*scale, dh=sh*scale;
+  ctx.fillStyle='#101216';ctx.fillRect(0,0,cw,ch);ctx.drawImage(el,(cw-dw)/2,(ch-dh)/2,dw,dh);
+}
+function loop(){
+  if(mode==='photo') drawContained(img);
+  if(mode==='video' && srcVideo.readyState>=2) drawContained(srcVideo);
+  raf=requestAnimationFrame(loop);
+}
+function startStream(){
+  if(raf) cancelAnimationFrame(raf); loop();
+  if(typeof canvas.captureStream==='function'){
+    stream=canvas.captureStream(30); preview.srcObject=stream; preview.play().catch(()=>{});
+    status('Flujo de cámara virtual de prueba activo.', 'ok');
+  } else {
+    status('Este WebView no admite canvas.captureStream; se muestra una vista previa directa.', 'error');
+  }
+}
+photoInput.addEventListener('change',()=>{
+  const f=photoInput.files&&photoInput.files[0]; if(!f)return;
+  stopTest(false); mode='photo'; objectUrl=URL.createObjectURL(f); img.onload=startStream; img.src=objectUrl;
+});
+videoInput.addEventListener('change',()=>{
+  const f=videoInput.files&&videoInput.files[0]; if(!f)return;
+  stopTest(false); mode='video'; objectUrl=URL.createObjectURL(f); srcVideo.src=objectUrl;
+  srcVideo.onloadeddata=()=>{srcVideo.play().then(startStream).catch(()=>startStream())}; srcVideo.load();
+});
+function stopTest(show=true){
+  if(raf){cancelAnimationFrame(raf);raf=0}
+  if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}
+  preview.srcObject=null; srcVideo.pause(); srcVideo.removeAttribute('src'); srcVideo.load(); img.removeAttribute('src');
+  cleanupUrl(); mode=null; ctx.fillStyle='#101216';ctx.fillRect(0,0,canvas.width,canvas.height);
+  if(show)status('Prueba detenida. Puedes elegir otro archivo.');
+}
+window.addEventListener('beforeunload',()=>stopTest(false));
+</script>
+</body>
+</html>
