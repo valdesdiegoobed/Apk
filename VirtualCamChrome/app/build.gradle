@@ -1,0 +1,30 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.vaguer.virtualcamchrome'
+    compileSdk 36
+
+    defaultConfig {
+        applicationId 'com.vaguer.virtualcamchrome'
+        minSdk 26
+        targetSdk 36
+        versionCode 3
+        versionName '1.0.2'
+    }
+
+    buildTypes {
+        debug { minifyEnabled false }
+        release { minifyEnabled false }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    implementation 'androidx.browser:browser:1.10.0'
+}
