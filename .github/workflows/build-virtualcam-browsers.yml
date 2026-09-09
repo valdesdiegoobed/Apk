@@ -1,0 +1,57 @@
+name: Build AforeWeb Browser APKs
+
+on:
+  push:
+    branches: [virtualcam-build]
+    paths:
+      - 'VirtualCamChrome/**'
+      - 'VirtualCamGecko/**'
+      - '.github/workflows/build-virtualcam-browsers.yml'
+  workflow_dispatch:
+
+jobs:
+  build-chrome:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - run: sdkmanager 'platforms;android-36' 'build-tools;36.0.0'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.11.1'
+      - name: Build Chrome APK
+        working-directory: VirtualCamChrome
+        run: gradle :app:assembleDebug --stacktrace
+      - name: Upload Chrome APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: VirtualCamChrome-1.0.2
+          path: VirtualCamChrome/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+
+  build-gecko:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - run: sdkmanager 'platforms;android-36' 'build-tools;36.0.0'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.11.1'
+      - name: Build Gecko APK
+        working-directory: VirtualCamGecko
+        run: gradle :app:assembleDebug --stacktrace
+      - name: Upload Gecko APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: VirtualCamGecko-1.0.2
+          path: VirtualCamGecko/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
