@@ -28,7 +28,7 @@ object TextProbe {
         val fontName: String
     )
 
-    fun nearestWord(document: PDDocument, pageIndex: Int, x: Float, yTop: Float): Selection? {
+    private fun collectGlyphs(document: PDDocument, pageIndex: Int): List<Glyph> {
         val glyphs = mutableListOf<Glyph>()
         val stripper = object : PDFTextStripper() {
             init {
@@ -53,9 +53,13 @@ object TextProbe {
                 super.processTextPosition(text)
             }
         }
+        stripper.getText(document)
+        return glyphs
+    }
 
+    fun nearestWord(document: PDDocument, pageIndex: Int, x: Float, yTop: Float): Selection? {
         return try {
-            stripper.getText(document)
+            val glyphs = collectGlyphs(document, pageIndex)
             val candidates = glyphs.filter { it.text.isNotBlank() }
             if (candidates.isEmpty()) return null
 
@@ -91,26 +95,92 @@ object TextProbe {
             while (start > 0 && joinable(sameLine[start - 1], sameLine[start])) start--
             while (end + 1 < sameLine.size && joinable(sameLine[end], sameLine[end + 1])) end++
 
-            val word = sameLine.subList(start, end + 1)
-            val value = word.joinToString("") { it.text }.trim()
-            if (value.isBlank()) return null
-
-            val left = word.minOf { it.x }
-            val right = word.maxOf { it.x + it.width }
-            val height = word.maxOf { it.height }
-            val size = target.size
-
-            Selection(
-                text = value,
-                x = left,
-                yTop = target.y,
-                width = (right - left).coerceAtLeast(2f),
-                height = height.coerceAtLeast(size * 0.75f),
-                fontSize = size,
-                fontName = target.fontName
-            )
+            buildSelection(sameLine.subList(start, end + 1), target)
         } catch (_: Exception) {
             null
         }
+    }
+
+    fun selectRange(
+        document: PDDocument,
+        pageIndex: Int,
+        left: Float,
+        top: Float,
+        right: Float,
+        bottom: Float
+    ): Selection? {
+        return try {
+            val glyphs = collectGlyphs(document, pageIndex).filter { it.text.isNotBlank() }
+            if (glyphs.isEmpty()) return null
+
+            val x1 = minOf(left, right)
+            val x2 = maxOf(left, right)
+            val y1 = minOf(top, bottom)
+            val y2 = maxOf(top, bottom)
+            val inRect = glyphs.filter { g ->
+                val cx = g.x + g.width / 2f
+                val cy = g.y - g.height / 2f
+                cx in (x1 - 2f)..(x2 + 2f) && cy in (y1 - 3f)..(y2 + 3f)
+            }
+            if (inRect.isEmpty()) return null
+
+            val lines = mutableListOf<MutableList<Glyph>>()
+            inRect.sortedBy { it.y }.forEach { g ->
+                val line = lines.firstOrNull { existing ->
+                    val avgY = existing.map { it.y }.average().toFloat()
+                    abs(avgY - g.y) <= max(3.5f, g.size * 0.60f)
+                }
+                if (line != null) line += g else lines += mutableListOf(g)
+            }
+
+            val line = lines.maxByOrNull { group -> group.sumOf { it.text.length } } ?: return null
+            val anchor = line.minByOrNull { it.x } ?: return null
+
+            val dominantFont = line.groupBy { it.fontName }
+                .maxByOrNull { (_, list) -> list.sumOf { it.text.length } }
+                ?.key ?: anchor.fontName
+
+            val sameFormat = line.filter {
+                it.fontName == dominantFont && abs(it.size - anchor.size) <= max(0.65f, anchor.size * 0.12f)
+            }.sortedBy { it.x }
+            if (sameFormat.isEmpty()) return null
+
+            buildSelection(sameFormat, sameFormat.first())
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    private fun buildSelection(items: List<Glyph>, target: Glyph): Selection? {
+        if (items.isEmpty()) return null
+        val sorted = items.sortedBy { it.x }
+        val sb = StringBuilder()
+        sorted.forEachIndexed { index, g ->
+            if (index > 0) {
+                val prev = sorted[index - 1]
+                val gap = g.x - (prev.x + prev.width)
+                val spaceThreshold = max(prev.size, g.size) * 0.28f
+                if (gap > spaceThreshold && !sb.endsWith(" ")) sb.append(' ')
+            }
+            sb.append(g.text)
+        }
+        val value = sb.toString().trim()
+        if (value.isBlank()) return null
+
+        val left = sorted.minOf { it.x }
+        val right = sorted.maxOf { it.x + it.width }
+        val height = sorted.maxOf { it.height }
+        val baseline = sorted.map { it.y }.average().toFloat()
+        val avgSize = sorted.map { it.size }.average().toFloat()
+
+        return Selection(
+            text = value,
+            x = left,
+            yTop = baseline,
+            width = (right - left).coerceAtLeast(2f),
+            height = height.coerceAtLeast(avgSize * 0.75f),
+            fontSize = avgSize,
+            fontName = target.fontName
+        )
     }
 }
