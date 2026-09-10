@@ -33,12 +33,17 @@ import java.io.FileInputStream
 import java.util.Locale
 
 class PdfEditorActivity : AppCompatActivity() {
+    private enum class TextAlignMode { LEFT, CENTER, RIGHT }
+
     private lateinit var b: ActivityPdfEditorBinding
     private lateinit var working: File
     private var pageIndex = 0
     private var pageCount = 0
     private var selection: TextProbe.Selection? = null
     private var actionMode: ActionMode? = null
+    private var alignMode = TextAlignMode.LEFT
+    private var selectionGuideLeft: Float? = null
+    private var selectionGuideRight: Float? = null
 
     private val pickImage = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         uri ?: return@registerForActivityResult
@@ -62,6 +67,7 @@ class PdfEditorActivity : AppCompatActivity() {
         PdfOps.copyUriToFile(this, source, working)
 
         bindButtons()
+        updateAlignmentUi()
         render()
     }
 
@@ -80,12 +86,23 @@ class PdfEditorActivity : AppCompatActivity() {
                 render()
             }
         }
+        b.btnSelect.setOnClickListener {
+            clearSelection()
+            b.pdfView.startRangeSelection()
+        }
         b.btnEdit.setOnClickListener {
             if (selection == null) selectNearestText(showMenu = false)
-            if (selection != null) editSelectionDialog() else toast("Toca dos veces o mantén presionado sobre un texto")
+            if (selection != null) editSelectionDialog() else toast("Selecciona texto con arrastre, doble toque o pulsación larga")
         }
         b.btnText.setOnClickListener { addTextDialog() }
         b.btnPaste.setOnClickListener { pasteClipboard() }
+
+        b.btnAlignLeft.setOnClickListener { setAlignMode(TextAlignMode.LEFT) }
+        b.btnAlignCenter.setOnClickListener { setAlignMode(TextAlignMode.CENTER) }
+        b.btnAlignRight.setOnClickListener { setAlignMode(TextAlignMode.RIGHT) }
+        b.btnNudgeLeft.setOnClickListener { moveSelectionBy(-2.5f) }
+        b.btnNudgeRight.setOnClickListener { moveSelectionBy(2.5f) }
+
         b.btnImage.setOnClickListener {
             if (!hasTap()) toast("Primero toca el lugar de la página donde irá la imagen o firma")
             else pickImage.launch(arrayOf("image/*"))
@@ -112,9 +129,21 @@ class PdfEditorActivity : AppCompatActivity() {
         b.btnWhatsApp.setOnClickListener { shareWhatsApp() }
 
         b.pdfView.onSingleTapPositioned = { clearSelection() }
-        b.pdfView.onTextSelectionGesture = {
-            selectNearestText(showMenu = true)
+        b.pdfView.onTextSelectionGesture = { selectNearestText(showMenu = true) }
+        b.pdfView.onRangeSelected = { left, top, right, bottom ->
+            selectDraggedRange(left, top, right, bottom)
         }
+    }
+
+    private fun setAlignMode(mode: TextAlignMode) {
+        alignMode = mode
+        updateAlignmentUi()
+    }
+
+    private fun updateAlignmentUi() {
+        b.btnAlignLeft.alpha = if (alignMode == TextAlignMode.LEFT) 1f else 0.55f
+        b.btnAlignCenter.alpha = if (alignMode == TextAlignMode.CENTER) 1f else 0.55f
+        b.btnAlignRight.alpha = if (alignMode == TextAlignMode.RIGHT) 1f else 0.55f
     }
 
     private fun render() {
@@ -168,13 +197,64 @@ class PdfEditorActivity : AppCompatActivity() {
         }
 
         selection = sel
+        selectionGuideLeft = sel.x
+        selectionGuideRight = sel.x + sel.width
+        setSelectionHighlight(sel, boxWidth, boxHeight)
+        if (showMenu) showSelectionMenu()
+        return true
+    }
+
+    private fun selectDraggedRange(left: Float, top: Float, right: Float, bottom: Float) {
+        var found: TextProbe.Selection? = null
+        var boxWidth = 1f
+        var boxHeight = 1f
+
+        runCatching {
+            PDDocument.load(working).use { doc ->
+                val page = doc.getPage(pageIndex)
+                val box = page.cropBox ?: page.mediaBox
+                boxWidth = box.width
+                boxHeight = box.height
+                found = TextProbe.selectRange(
+                    doc,
+                    pageIndex,
+                    left * box.width,
+                    top * box.height,
+                    right * box.width,
+                    bottom * box.height
+                )
+            }
+        }
+
+        val sel = found ?: run {
+            clearSelection()
+            return
+        }
+
+        selection = sel
+        selectionGuideLeft = left * boxWidth
+        selectionGuideRight = right * boxWidth
+        setSelectionHighlight(sel, boxWidth, boxHeight)
+        showSelectionMenu()
+    }
+
+    private fun setSelectionHighlight(sel: TextProbe.Selection, boxWidth: Float, boxHeight: Float) {
         val top = ((sel.yTop - sel.height * 1.15f) / boxHeight).coerceIn(0f, 1f)
         val bottom = ((sel.yTop + sel.height * 0.25f) / boxHeight).coerceIn(0f, 1f)
         val left = (sel.x / boxWidth).coerceIn(0f, 1f)
         val right = ((sel.x + sel.width) / boxWidth).coerceIn(0f, 1f)
         b.pdfView.setSelection(RectF(left, top, right, bottom))
-        if (showMenu) showSelectionMenu()
-        return true
+    }
+
+    private fun refreshSelectionHighlight() {
+        val sel = selection ?: return
+        runCatching {
+            PDDocument.load(working).use { doc ->
+                val page = doc.getPage(pageIndex)
+                val box = page.cropBox ?: page.mediaBox
+                setSelectionHighlight(sel, box.width, box.height)
+            }
+        }
     }
 
     private fun showSelectionMenu() {
@@ -210,6 +290,8 @@ class PdfEditorActivity : AppCompatActivity() {
 
     private fun clearSelection() {
         selection = null
+        selectionGuideLeft = null
+        selectionGuideRight = null
         actionMode?.finish()
         actionMode = null
         b.pdfView.clearSelection()
@@ -274,10 +356,15 @@ class PdfEditorActivity : AppCompatActivity() {
             addView(text)
             addView(size)
         }
+        val alignmentLabel = when (alignMode) {
+            TextAlignMode.LEFT -> "Izquierda"
+            TextAlignMode.CENTER -> "Centro"
+            TextAlignMode.RIGHT -> "Derecha"
+        }
 
         AlertDialog.Builder(this)
             .setTitle("Editar texto")
-            .setMessage("Fuente detectada: ${sel.fontName}")
+            .setMessage("Fuente detectada: ${sel.fontName}\nAlineación: $alignmentLabel")
             .setView(layout)
             .setPositiveButton("Aplicar") { _, _ ->
                 val value = text.text.toString()
@@ -314,9 +401,14 @@ class PdfEditorActivity : AppCompatActivity() {
             addView(size)
         }
         val fontInfo = probe?.let { "\nFuente cercana detectada: ${it.name}" } ?: "\nSin fuente cercana: se usará Helvetica"
+        val alignmentLabel = when (alignMode) {
+            TextAlignMode.LEFT -> "Izquierda"
+            TextAlignMode.CENTER -> "Centro"
+            TextAlignMode.RIGHT -> "Derecha"
+        }
         AlertDialog.Builder(this)
             .setTitle("Agregar texto")
-            .setMessage("Conservar formato original está activo cuando es posible.$fontInfo")
+            .setMessage("Conservar formato original está activo cuando es posible.$fontInfo\nAlineación: $alignmentLabel")
             .setView(layout)
             .setPositiveButton("Agregar") { _, _ ->
                 val value = text.text.toString()
@@ -334,11 +426,17 @@ class PdfEditorActivity : AppCompatActivity() {
         mutate { doc ->
             val page = doc.getPage(pageIndex)
             val box: PDRectangle = page.cropBox ?: page.mediaBox
-            val x = nx * box.width
+            val anchorX = nx * box.width
             val yTop = ny * box.height
             val y = box.height - yTop
-            val probe = FontProbe.nearest(doc, pageIndex, x, yTop)
+            val probe = FontProbe.nearest(doc, pageIndex, anchorX, yTop)
             val preferred = probe?.font ?: PDType1Font.HELVETICA
+            val width = textWidth(preferred, fontSize, value)
+            val x = when (alignMode) {
+                TextAlignMode.LEFT -> anchorX
+                TextAlignMode.CENTER -> anchorX - width / 2f
+                TextAlignMode.RIGHT -> anchorX - width
+            }.coerceIn(0f, (box.width - width).coerceAtLeast(0f))
             writeText(doc, page, x, y, preferred, fontSize, value)
         }
         clearSelection()
@@ -346,6 +444,8 @@ class PdfEditorActivity : AppCompatActivity() {
 
     private fun replaceSelection(value: String, fontSize: Float) {
         val sel = selection ?: return
+        val guideLeft = selectionGuideLeft ?: sel.x
+        val guideRight = selectionGuideRight ?: (sel.x + sel.width)
         mutate { doc ->
             val page = doc.getPage(pageIndex)
             val box: PDRectangle = page.cropBox ?: page.mediaBox
@@ -353,9 +453,51 @@ class PdfEditorActivity : AppCompatActivity() {
             val probe = FontProbe.nearest(doc, pageIndex, sel.x, sel.yTop)
             val preferred = probe?.font ?: PDType1Font.HELVETICA
             coverText(doc, page, sel, baseline)
-            if (value.isNotBlank()) writeText(doc, page, sel.x, baseline, preferred, fontSize, value)
+            if (value.isNotBlank()) {
+                val width = textWidth(preferred, fontSize, value)
+                val rawX = when (alignMode) {
+                    TextAlignMode.LEFT -> guideLeft
+                    TextAlignMode.CENTER -> guideLeft + ((guideRight - guideLeft) - width) / 2f
+                    TextAlignMode.RIGHT -> guideRight - width
+                }
+                val x = rawX.coerceIn(0f, (box.width - width).coerceAtLeast(0f))
+                writeText(doc, page, x, baseline, preferred, fontSize, value)
+            }
         }
         clearSelection()
+    }
+
+    private fun moveSelectionBy(dx: Float) {
+        val sel = selection ?: return toast("Selecciona primero el texto que quieres mover")
+        var newX = sel.x
+        var applied = false
+        runCatching {
+            val temp = File(cacheDir, "move_${System.nanoTime()}.pdf")
+            PDDocument.load(working).use { doc ->
+                val page = doc.getPage(pageIndex)
+                val box: PDRectangle = page.cropBox ?: page.mediaBox
+                val baseline = box.height - sel.yTop
+                val probe = FontProbe.nearest(doc, pageIndex, sel.x, sel.yTop)
+                val preferred = probe?.font ?: PDType1Font.HELVETICA
+                val width = textWidth(preferred, sel.fontSize, sel.text)
+                newX = (sel.x + dx).coerceIn(0f, (box.width - width).coerceAtLeast(0f))
+                coverText(doc, page, sel, baseline)
+                writeText(doc, page, newX, baseline, preferred, sel.fontSize, sel.text)
+                doc.save(temp)
+            }
+            temp.copyTo(working, overwrite = true)
+            temp.delete()
+            applied = true
+            render()
+        }.onFailure { toast("No se pudo mover el texto: ${it.message}") }
+
+        if (applied) {
+            val actualDx = newX - sel.x
+            selection = sel.copy(x = newX)
+            selectionGuideLeft = (selectionGuideLeft ?: sel.x) + actualDx
+            selectionGuideRight = (selectionGuideRight ?: (sel.x + sel.width)) + actualDx
+            refreshSelectionHighlight()
+        }
     }
 
     private fun eraseSelection(sel: TextProbe.Selection) {
@@ -375,6 +517,14 @@ class PdfEditorActivity : AppCompatActivity() {
             cs.setNonStrokingColor(255, 255, 255)
             cs.addRect((sel.x - pad).coerceAtLeast(0f), baseline - pad, sel.width + pad * 2f, h + pad * 2f)
             cs.fill()
+        }
+    }
+
+    private fun textWidth(font: PDFont, fontSize: Float, value: String): Float {
+        return try {
+            (font.getStringWidth(value) / 1000f * fontSize).coerceAtLeast(1f)
+        } catch (_: Exception) {
+            (value.length * fontSize * 0.55f).coerceAtLeast(1f)
         }
     }
 
