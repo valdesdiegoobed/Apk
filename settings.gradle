@@ -14,5 +14,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = 'DVControlTramites'
+rootProject.name = 'PDFVaguer'
 include ':app'
+project(':app').projectDir = file('pdf-vaguer/app')
