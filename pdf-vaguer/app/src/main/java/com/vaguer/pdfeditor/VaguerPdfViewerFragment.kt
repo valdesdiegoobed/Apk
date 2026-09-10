@@ -1,5 +1,8 @@
 package com.vaguer.pdfeditor
 
+import android.content.Intent
+import android.net.Uri
+import androidx.core.content.FileProvider
 import androidx.pdf.ExperimentalPdfApi
 import androidx.pdf.PdfDocument
 import androidx.pdf.PdfRect
@@ -7,6 +10,7 @@ import androidx.pdf.selection.Selection
 import androidx.pdf.selection.model.TextSelection
 import androidx.pdf.view.PdfView
 import androidx.pdf.viewer.fragment.PdfViewerFragment
+import java.io.File
 
 @OptIn(ExperimentalPdfApi::class)
 class VaguerPdfViewerFragment : PdfViewerFragment() {
@@ -20,6 +24,7 @@ class VaguerPdfViewerFragment : PdfViewerFragment() {
 
     private var internalPdfView: PdfView? = null
     private var loaded = false
+    private var fallbackStarted = false
 
     override fun onPdfViewCreated(pdfView: PdfView) {
         super.onPdfViewCreated(pdfView)
@@ -61,6 +66,28 @@ class VaguerPdfViewerFragment : PdfViewerFragment() {
         super.onLoadDocumentError(error)
         loaded = false
         onDocumentError?.invoke(error)
+        openCompatibleFallback()
+    }
+
+    private fun openCompatibleFallback() {
+        if (fallbackStarted || !isAdded) return
+        val source = documentUri ?: return
+        fallbackStarted = true
+        val context = requireContext()
+        val safeUri = if (source.scheme.equals("file", ignoreCase = true)) {
+            val path = source.path
+            if (path.isNullOrBlank()) source else runCatching {
+                FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", File(path))
+            }.getOrDefault(source)
+        } else source
+
+        runCatching {
+            startActivity(Intent(context, PdfEditorActivity::class.java).apply {
+                data = safeUri
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            })
+            activity?.finish()
+        }
     }
 
     fun activateSearch() {
