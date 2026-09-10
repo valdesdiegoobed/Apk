@@ -45,9 +45,15 @@
             android:paddingStart="6dp"
             android:paddingEnd="6dp"
             android:paddingBottom="4dp">
+            <Button android:id="@+id/btnSelect" android:layout_width="wrap_content" android:layout_height="44dp" android:text="Seleccionar" />
             <Button android:id="@+id/btnEdit" android:layout_width="wrap_content" android:layout_height="44dp" android:text="Editar" />
             <Button android:id="@+id/btnText" android:layout_width="wrap_content" android:layout_height="44dp" android:text="Texto" />
             <Button android:id="@+id/btnPaste" android:layout_width="wrap_content" android:layout_height="44dp" android:text="Pegar" />
+            <Button android:id="@+id/btnAlignLeft" android:layout_width="wrap_content" android:layout_height="44dp" android:text="Izq." />
+            <Button android:id="@+id/btnAlignCenter" android:layout_width="wrap_content" android:layout_height="44dp" android:text="Centro" />
+            <Button android:id="@+id/btnAlignRight" android:layout_width="wrap_content" android:layout_height="44dp" android:text="Der." />
+            <Button android:id="@+id/btnNudgeLeft" android:layout_width="52dp" android:layout_height="44dp" android:text="←" />
+            <Button android:id="@+id/btnNudgeRight" android:layout_width="52dp" android:layout_height="44dp" android:text="→" />
             <Button android:id="@+id/btnImage" android:layout_width="wrap_content" android:layout_height="44dp" android:text="Imagen/Firma" />
             <Button android:id="@+id/btnSave" android:layout_width="wrap_content" android:layout_height="44dp" android:text="Guardar" />
             <Button android:id="@+id/btnShare" android:layout_width="wrap_content" android:layout_height="44dp" android:text="Compartir" />
