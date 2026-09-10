@@ -1,41 +1,67 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="#F3F3F3">
+    android:background="#F3F6FA">
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="52dp"
+        android:layout_height="64dp"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:paddingStart="6dp"
-        android:paddingEnd="6dp"
-        android:background="#FFFFFF">
+        android:paddingStart="14dp"
+        android:paddingEnd="8dp"
+        android:background="#0F172A">
 
-        <TextView
-            android:id="@+id/txtModernTitle"
+        <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:paddingStart="8dp"
-            android:text="PDF VAGUER"
-            android:textStyle="bold"
-            android:textSize="17sp" />
+            android:orientation="vertical">
 
-        <Button
+            <TextView
+                android:id="@+id/txtModernTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:text="PDF VAGUER"
+                android:textColor="#FFFFFF"
+                android:textSize="17sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Editor de documentos"
+                android:textColor="#CBD5E1"
+                android:textSize="11sp" />
+        </LinearLayout>
+
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/btnModernUndo"
-            android:layout_width="48dp"
-            android:layout_height="42dp"
+            android:layout_width="46dp"
+            android:layout_height="46dp"
+            android:minWidth="0dp"
             android:text="↶"
-            android:contentDescription="Deshacer" />
-        <Button
+            android:textColor="#FFFFFF"
+            android:textSize="21sp"
+            app:backgroundTint="#1E293B"
+            app:cornerRadius="14dp" />
+
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/btnModernRedo"
-            android:layout_width="48dp"
-            android:layout_height="42dp"
+            android:layout_width="46dp"
+            android:layout_height="46dp"
+            android:layout_marginStart="5dp"
+            android:minWidth="0dp"
             android:text="↷"
-            android:contentDescription="Rehacer" />
+            android:textColor="#FFFFFF"
+            android:textSize="21sp"
+            app:backgroundTint="#1E293B"
+            app:cornerRadius="14dp" />
     </LinearLayout>
 
     <HorizontalScrollView
@@ -49,16 +75,97 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:paddingStart="6dp"
-            android:paddingEnd="6dp"
-            android:paddingBottom="5dp">
+            android:paddingStart="8dp"
+            android:paddingTop="8dp"
+            android:paddingEnd="8dp"
+            android:paddingBottom="8dp">
 
-            <Button android:id="@+id/btnModernSearch" android:layout_width="wrap_content" android:layout_height="44dp" android:text="Buscar" />
-            <Button android:id="@+id/btnModernEdit" android:layout_width="wrap_content" android:layout_height="44dp" android:text="Editar texto" />
-            <Button android:id="@+id/btnModernSave" android:layout_width="wrap_content" android:layout_height="44dp" android:text="Guardar" />
-            <Button android:id="@+id/btnModernShare" android:layout_width="wrap_content" android:layout_height="44dp" android:text="Compartir" />
-            <Button android:id="@+id/btnModernWhatsApp" android:layout_width="wrap_content" android:layout_height="44dp" android:text="WhatsApp" />
-            <Button android:id="@+id/btnModernTools" android:layout_width="wrap_content" android:layout_height="44dp" android:text="Más herramientas" />
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnModernEdit"
+                android:layout_width="wrap_content"
+                android:layout_height="46dp"
+                android:text="✎  Editar"
+                android:textAllCaps="false"
+                app:backgroundTint="#155EEF"
+                app:cornerRadius="14dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnModernSearch"
+                android:layout_width="wrap_content"
+                android:layout_height="46dp"
+                android:layout_marginStart="7dp"
+                android:text="⌕  Buscar"
+                android:textAllCaps="false"
+                android:textColor="#172033"
+                app:backgroundTint="#FFFFFF"
+                app:cornerRadius="14dp"
+                app:strokeColor="#D0D5DD"
+                app:strokeWidth="1dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnModernLibrarySave"
+                android:layout_width="wrap_content"
+                android:layout_height="46dp"
+                android:layout_marginStart="7dp"
+                android:text="📥  Guardar en PDF VAGUER"
+                android:textAllCaps="false"
+                android:textColor="#05603A"
+                app:backgroundTint="#ECFDF3"
+                app:cornerRadius="14dp"
+                app:strokeColor="#ABEFC6"
+                app:strokeWidth="1dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnModernSave"
+                android:layout_width="wrap_content"
+                android:layout_height="46dp"
+                android:layout_marginStart="7dp"
+                android:text="💾  Guardar como"
+                android:textAllCaps="false"
+                android:textColor="#172033"
+                app:backgroundTint="#FFFFFF"
+                app:cornerRadius="14dp"
+                app:strokeColor="#D0D5DD"
+                app:strokeWidth="1dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnModernShare"
+                android:layout_width="wrap_content"
+                android:layout_height="46dp"
+                android:layout_marginStart="7dp"
+                android:text="↗  Compartir"
+                android:textAllCaps="false"
+                android:textColor="#172033"
+                app:backgroundTint="#FFFFFF"
+                app:cornerRadius="14dp"
+                app:strokeColor="#D0D5DD"
+                app:strokeWidth="1dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnModernWhatsApp"
+                android:layout_width="wrap_content"
+                android:layout_height="46dp"
+                android:layout_marginStart="7dp"
+                android:text="WhatsApp"
+                android:textAllCaps="false"
+                android:textColor="#05603A"
+                app:backgroundTint="#ECFDF3"
+                app:cornerRadius="14dp"
+                app:strokeColor="#ABEFC6"
+                app:strokeWidth="1dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnModernTools"
+                android:layout_width="wrap_content"
+                android:layout_height="46dp"
+                android:layout_marginStart="7dp"
+                android:text="⋯  Más herramientas"
+                android:textAllCaps="false"
+                android:textColor="#172033"
+                app:backgroundTint="#FFFFFF"
+                app:cornerRadius="14dp"
+                app:strokeColor="#D0D5DD"
+                app:strokeWidth="1dp" />
         </LinearLayout>
     </HorizontalScrollView>
 
@@ -66,11 +173,12 @@
         android:id="@+id/txtModernStatus"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:paddingStart="12dp"
-        android:paddingEnd="12dp"
-        android:paddingTop="4dp"
-        android:paddingBottom="4dp"
+        android:paddingStart="14dp"
+        android:paddingTop="7dp"
+        android:paddingEnd="14dp"
+        android:paddingBottom="7dp"
         android:text="Mantén presionado el texto para seleccionarlo"
+        android:textColor="#667085"
         android:textSize="12sp"
         android:background="#FFFFFF" />
 
@@ -78,6 +186,6 @@
         android:id="@+id/pdfModernContainer"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1" />
-
+        android:layout_weight="1"
+        android:layout_marginTop="1dp" />
 </LinearLayout>
