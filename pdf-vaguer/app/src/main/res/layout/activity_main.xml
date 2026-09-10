@@ -1,0 +1,236 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#F3F6FA">
+
+    <com.google.android.material.appbar.MaterialToolbar
+        android:layout_width="match_parent"
+        android:layout_height="64dp"
+        android:background="#0F172A"
+        android:paddingStart="10dp"
+        android:paddingEnd="10dp"
+        app:title="PDF VAGUER"
+        app:subtitle="Lector, editor y biblioteca privada"
+        app:titleTextColor="#FFFFFF"
+        app:subtitleTextColor="#CBD5E1" />
+
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="14dp"
+        android:layout_marginTop="14dp"
+        android:layout_marginEnd="14dp"
+        app:cardBackgroundColor="#FFFFFF"
+        app:cardCornerRadius="20dp"
+        app:cardElevation="0dp"
+        app:strokeColor="#DCE3EC"
+        app:strokeWidth="1dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Documentos y herramientas"
+                android:textColor="#172033"
+                android:textSize="19sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="Abre un archivo o guárdalo directamente dentro de PDF VAGUER."
+                android:textColor="#667085"
+                android:textSize="13sp" />
+
+            <HorizontalScrollView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:scrollbars="none">
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnOpen"
+                        android:layout_width="wrap_content"
+                        android:layout_height="48dp"
+                        android:text="📄  Abrir PDF"
+                        android:textAllCaps="false"
+                        app:backgroundTint="#155EEF"
+                        app:cornerRadius="14dp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnImportLibrary"
+                        android:layout_width="wrap_content"
+                        android:layout_height="48dp"
+                        android:layout_marginStart="8dp"
+                        android:text="📥  Guardar en PDF VAGUER"
+                        android:textAllCaps="false"
+                        android:textColor="#172033"
+                        app:backgroundTint="#FFFFFF"
+                        app:cornerRadius="14dp"
+                        app:strokeColor="#D0D5DD"
+                        app:strokeWidth="1dp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnMerge"
+                        android:layout_width="wrap_content"
+                        android:layout_height="48dp"
+                        android:layout_marginStart="8dp"
+                        android:text="⊕  Unir"
+                        android:textAllCaps="false"
+                        android:textColor="#172033"
+                        app:backgroundTint="#FFFFFF"
+                        app:cornerRadius="14dp"
+                        app:strokeColor="#D0D5DD"
+                        app:strokeWidth="1dp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnSplit"
+                        android:layout_width="wrap_content"
+                        android:layout_height="48dp"
+                        android:layout_marginStart="8dp"
+                        android:text="✂  Dividir"
+                        android:textAllCaps="false"
+                        android:textColor="#172033"
+                        app:backgroundTint="#FFFFFF"
+                        app:cornerRadius="14dp"
+                        app:strokeColor="#D0D5DD"
+                        app:strokeWidth="1dp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnImages"
+                        android:layout_width="wrap_content"
+                        android:layout_height="48dp"
+                        android:layout_marginStart="8dp"
+                        android:text="▧  Imágenes a PDF"
+                        android:textAllCaps="false"
+                        android:textColor="#172033"
+                        app:backgroundTint="#FFFFFF"
+                        app:cornerRadius="14dp"
+                        app:strokeColor="#D0D5DD"
+                        app:strokeWidth="1dp" />
+                </LinearLayout>
+            </HorizontalScrollView>
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="18dp"
+        android:paddingTop="16dp"
+        android:paddingEnd="18dp"
+        android:paddingBottom="8dp">
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Mi biblioteca"
+                android:textColor="#172033"
+                android:textSize="20sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/txtLibraryCount"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0 documentos"
+                android:textColor="#667085"
+                android:textSize="12sp" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="14dp"
+        android:layout_marginEnd="14dp"
+        app:boxBackgroundColor="#FFFFFF"
+        app:boxBackgroundMode="filled"
+        app:boxCornerRadiusBottomEnd="14dp"
+        app:boxCornerRadiusBottomStart="14dp"
+        app:boxCornerRadiusTopEnd="14dp"
+        app:boxCornerRadiusTopStart="14dp"
+        app:hintEnabled="false">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/edtLibrarySearch"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:hint="🔎  Buscar PDF por nombre"
+            android:singleLine="true"
+            android:textColor="#172033"
+            android:textColorHint="#667085" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:layout_marginTop="6dp">
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/recyclerLibrary"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clipToPadding="false"
+            android:paddingStart="7dp"
+            android:paddingEnd="7dp"
+            android:paddingBottom="18dp" />
+
+        <LinearLayout
+            android:id="@+id/txtEmpty"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:padding="28dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="📚"
+                android:textSize="42sp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:gravity="center"
+                android:text="Todavía no tienes PDF guardados aquí"
+                android:textColor="#172033"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="5dp"
+                android:gravity="center"
+                android:text="Usa “Guardar en PDF VAGUER” para crear tu biblioteca privada."
+                android:textColor="#667085"
+                android:textSize="13sp" />
+        </LinearLayout>
+    </FrameLayout>
+</LinearLayout>

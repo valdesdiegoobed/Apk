@@ -1,4 +1,4 @@
-name: Compilar APK DV Control
+name: Compilar PDF VAGUER
 
 on:
   push:
@@ -11,7 +11,7 @@ permissions:
   contents: read
 
 env:
-  APK_NAME: DV-Control-de-Tramites-v2.1.0.apk
+  APK_NAME: PDF-VAGUER-1.0.0.apk
 
 jobs:
   build:
@@ -35,12 +35,12 @@ jobs:
         run: gradle assembleDebug --no-daemon
 
       - name: Preparar APK
-        run: cp app/build/outputs/apk/debug/app-debug.apk "$APK_NAME"
+        run: cp pdf-vaguer/app/build/outputs/apk/debug/app-debug.apk "$APK_NAME"
 
       - name: Publicar APK como artefacto
         uses: actions/upload-artifact@v4
         with:
-          name: DV-Control-de-Tramites-v2.1.0
-          path: DV-Control-de-Tramites-v2.1.0.apk
+          name: PDF-VAGUER-Android
+          path: PDF-VAGUER-1.0.0.apk
           if-no-files-found: error
           retention-days: 30
