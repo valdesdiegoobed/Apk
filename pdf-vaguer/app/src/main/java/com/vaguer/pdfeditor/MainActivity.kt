@@ -24,7 +24,7 @@ class MainActivity : AppCompatActivity() {
 
     private val openPdf = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         uri ?: return@registerForActivityResult
-        openEditor(uri)
+        openEditor(uri, null, PdfLibraryStore.queryName(this, uri))
     }
 
     private val importToLibrary = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
@@ -104,7 +104,8 @@ class MainActivity : AppCompatActivity() {
         b.edtLibrarySearch.doAfterTextChanged { refreshEmptyState(it?.toString().orEmpty()) }
 
         if (intent?.action == Intent.ACTION_VIEW && intent.data != null) {
-            openEditor(intent.data!!)
+            val uri = intent.data!!
+            openEditor(uri, null, PdfLibraryStore.queryName(this, uri))
         }
     }
 
@@ -134,13 +135,15 @@ class MainActivity : AppCompatActivity() {
 
     private fun openLibrary(file: File) {
         val uri = FileProvider.getUriForFile(this, "${packageName}.fileprovider", file)
-        openEditor(uri)
+        openEditor(uri, file.absolutePath, file.name)
     }
 
-    private fun openEditor(uri: Uri) {
+    private fun openEditor(uri: Uri, libraryPath: String?, displayName: String?) {
         startActivity(Intent(this, PdfEditorActivity::class.java).apply {
             data = uri
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            putExtra(PdfEditorActivity.EXTRA_LIBRARY_PATH, libraryPath)
+            putExtra(PdfEditorActivity.EXTRA_DISPLAY_NAME, displayName ?: "Documento.pdf")
         })
     }
 
