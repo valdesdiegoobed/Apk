@@ -12,8 +12,8 @@ android {
         applicationId 'com.vaguer.pdfeditor'
         minSdk 28
         targetSdk 35
-        versionCode 7
-        versionName '1.4.0'
+        versionCode 8
+        versionName '1.5.0'
     }
 
     buildFeatures {
@@ -35,6 +35,7 @@ dependencies {
     implementation 'com.google.android.material:material:1.12.0'
     implementation 'androidx.activity:activity-ktx:1.10.0'
     implementation 'androidx.constraintlayout:constraintlayout:2.2.0'
+    implementation 'androidx.recyclerview:recyclerview:1.4.0'
     implementation 'androidx.pdf:pdf-viewer-fragment:1.0.0-beta01'
     implementation 'com.tom-roush:pdfbox-android:2.0.27.0'
 }
