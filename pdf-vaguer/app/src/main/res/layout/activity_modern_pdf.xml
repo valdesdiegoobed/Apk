@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#F3F3F3">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="52dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="6dp"
+        android:paddingEnd="6dp"
+        android:background="#FFFFFF">
+
+        <TextView
+            android:id="@+id/txtModernTitle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:paddingStart="8dp"
+            android:text="PDF VAGUER"
+            android:textStyle="bold"
+            android:textSize="17sp" />
+
+        <Button
+            android:id="@+id/btnModernUndo"
+            android:layout_width="48dp"
+            android:layout_height="42dp"
+            android:text="↶"
+            android:contentDescription="Deshacer" />
+        <Button
+            android:id="@+id/btnModernRedo"
+            android:layout_width="48dp"
+            android:layout_height="42dp"
+            android:text="↷"
+            android:contentDescription="Rehacer" />
+    </LinearLayout>
+
+    <HorizontalScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:fillViewport="false"
+        android:scrollbars="none"
+        android:background="#FFFFFF">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingStart="6dp"
+            android:paddingEnd="6dp"
+            android:paddingBottom="5dp">
+
+            <Button android:id="@+id/btnModernSearch" android:layout_width="wrap_content" android:layout_height="44dp" android:text="Buscar" />
+            <Button android:id="@+id/btnModernEdit" android:layout_width="wrap_content" android:layout_height="44dp" android:text="Editar texto" />
+            <Button android:id="@+id/btnModernSave" android:layout_width="wrap_content" android:layout_height="44dp" android:text="Guardar" />
+            <Button android:id="@+id/btnModernShare" android:layout_width="wrap_content" android:layout_height="44dp" android:text="Compartir" />
+            <Button android:id="@+id/btnModernWhatsApp" android:layout_width="wrap_content" android:layout_height="44dp" android:text="WhatsApp" />
+            <Button android:id="@+id/btnModernTools" android:layout_width="wrap_content" android:layout_height="44dp" android:text="Más herramientas" />
+        </LinearLayout>
+    </HorizontalScrollView>
+
+    <TextView
+        android:id="@+id/txtModernStatus"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingStart="12dp"
+        android:paddingEnd="12dp"
+        android:paddingTop="4dp"
+        android:paddingBottom="4dp"
+        android:text="Mantén presionado el texto para seleccionarlo"
+        android:textSize="12sp"
+        android:background="#FFFFFF" />
+
+    <FrameLayout
+        android:id="@+id/pdfModernContainer"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+
+</LinearLayout>
