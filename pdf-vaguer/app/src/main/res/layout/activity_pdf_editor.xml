@@ -1,86 +1,314 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical">
+    android:orientation="vertical"
+    android:background="#F3F6FA">
+
+    <com.google.android.material.appbar.MaterialToolbar
+        android:id="@+id/toolbarEditor"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:background="#0F172A"
+        android:paddingStart="8dp"
+        android:paddingEnd="8dp"
+        app:title="PDF VAGUER"
+        app:subtitle="Editor de documentos"
+        app:titleTextColor="#FFFFFF"
+        app:subtitleTextColor="#CBD5E1" />
+
+    <HorizontalScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="#FFFFFF"
+        android:scrollbars="none">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingStart="8dp"
+            android:paddingTop="7dp"
+            android:paddingEnd="8dp"
+            android:paddingBottom="7dp">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnSelect"
+                android:layout_width="wrap_content"
+                android:layout_height="42dp"
+                android:text="⌖  Seleccionar"
+                android:textAllCaps="false"
+                app:backgroundTint="#155EEF"
+                app:cornerRadius="13dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnEdit"
+                android:layout_width="wrap_content"
+                android:layout_height="42dp"
+                android:layout_marginStart="7dp"
+                android:text="✎  Editar"
+                android:textAllCaps="false"
+                android:textColor="#172033"
+                app:backgroundTint="#FFFFFF"
+                app:cornerRadius="13dp"
+                app:strokeColor="#D0D5DD"
+                app:strokeWidth="1dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnText"
+                android:layout_width="wrap_content"
+                android:layout_height="42dp"
+                android:layout_marginStart="7dp"
+                android:text="T  Texto"
+                android:textAllCaps="false"
+                android:textColor="#172033"
+                app:backgroundTint="#FFFFFF"
+                app:cornerRadius="13dp"
+                app:strokeColor="#D0D5DD"
+                app:strokeWidth="1dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnAnnotate"
+                android:layout_width="wrap_content"
+                android:layout_height="42dp"
+                android:layout_marginStart="7dp"
+                android:text="▰  Anotar"
+                android:textAllCaps="false"
+                android:textColor="#172033"
+                app:backgroundTint="#FFFFFF"
+                app:cornerRadius="13dp"
+                app:strokeColor="#D0D5DD"
+                app:strokeWidth="1dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnDraw"
+                android:layout_width="wrap_content"
+                android:layout_height="42dp"
+                android:layout_marginStart="7dp"
+                android:text="✐  Dibujar"
+                android:textAllCaps="false"
+                android:textColor="#172033"
+                app:backgroundTint="#FFFFFF"
+                app:cornerRadius="13dp"
+                app:strokeColor="#D0D5DD"
+                app:strokeWidth="1dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnImage"
+                android:layout_width="wrap_content"
+                android:layout_height="42dp"
+                android:layout_marginStart="7dp"
+                android:text="✍  Firma / Imagen"
+                android:textAllCaps="false"
+                android:textColor="#172033"
+                app:backgroundTint="#FFFFFF"
+                app:cornerRadius="13dp"
+                app:strokeColor="#D0D5DD"
+                app:strokeWidth="1dp" />
+        </LinearLayout>
+    </HorizontalScrollView>
+
+    <HorizontalScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="#F8FAFC"
+        android:scrollbars="none">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingStart="8dp"
+            android:paddingTop="5dp"
+            android:paddingEnd="8dp"
+            android:paddingBottom="6dp">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnSearch"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="40dp"
+                android:text="⌕ Buscar"
+                android:textAllCaps="false"
+                android:textColor="#344054" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnPaste"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="40dp"
+                android:text="⎘ Pegar"
+                android:textAllCaps="false"
+                android:textColor="#344054" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnAlignLeft"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="40dp"
+                android:text="≡ Izq."
+                android:textAllCaps="false"
+                android:textColor="#344054" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnAlignCenter"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="40dp"
+                android:text="≡ Centro"
+                android:textAllCaps="false"
+                android:textColor="#344054" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnAlignRight"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="40dp"
+                android:text="≡ Der."
+                android:textAllCaps="false"
+                android:textColor="#344054" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnNudgeLeft"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="40dp"
+                android:text="← Mover"
+                android:textAllCaps="false"
+                android:textColor="#344054" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnNudgeRight"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="40dp"
+                android:text="Mover →"
+                android:textAllCaps="false"
+                android:textColor="#344054" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnLibrary"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="40dp"
+                android:text="▣ Guardar en VAGUER"
+                android:textAllCaps="false"
+                android:textColor="#155EEF" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnSave"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="40dp"
+                android:text="⇩ Guardar como"
+                android:textAllCaps="false"
+                android:textColor="#155EEF" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnShare"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="40dp"
+                android:text="↗ Compartir"
+                android:textAllCaps="false"
+                android:textColor="#344054" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnWhatsApp"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="40dp"
+                android:text="WhatsApp"
+                android:textAllCaps="false"
+                android:textColor="#344054" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnPages"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="40dp"
+                android:text="▤ Páginas"
+                android:textAllCaps="false"
+                android:textColor="#344054" />
+        </LinearLayout>
+    </HorizontalScrollView>
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
+        android:layout_height="48dp"
         android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:background="#FFFFFF"
         android:paddingStart="8dp"
-        android:paddingEnd="8dp"
-        android:paddingTop="4dp"
-        android:paddingBottom="2dp">
-        <Button
+        android:paddingEnd="8dp">
+
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/btnPrev"
+            style="@style/Widget.Material3.Button.TextButton"
             android:layout_width="48dp"
-            android:layout_height="44dp"
-            android:text="‹" />
+            android:layout_height="42dp"
+            android:minWidth="0dp"
+            android:text="‹"
+            android:textSize="24sp"
+            android:textColor="#172033" />
+
         <TextView
             android:id="@+id/txtPage"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:gravity="center"
-            android:text="Página 1/1"
+            android:text="Página 1 / 1"
+            android:textColor="#172033"
             android:textStyle="bold" />
-        <Button
-            android:id="@+id/btnUndo"
-            android:layout_width="52dp"
-            android:layout_height="44dp"
-            android:text="↶" />
-        <Button
-            android:id="@+id/btnRedo"
-            android:layout_width="52dp"
-            android:layout_height="44dp"
-            android:text="↷" />
-        <Button
-            android:id="@+id/btnNext"
-            android:layout_width="48dp"
-            android:layout_height="44dp"
-            android:text="›" />
-    </LinearLayout>
 
-    <HorizontalScrollView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:fillViewport="false"
-        android:scrollbars="none">
-        <LinearLayout
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnZoomReset"
+            style="@style/Widget.Material3.Button.TextButton"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:paddingStart="6dp"
-            android:paddingEnd="6dp"
-            android:paddingBottom="4dp">
-            <Button android:id="@+id/btnSelect" android:layout_width="wrap_content" android:layout_height="44dp" android:text="Seleccionar" />
-            <Button android:id="@+id/btnEdit" android:layout_width="wrap_content" android:layout_height="44dp" android:text="Editar" />
-            <Button android:id="@+id/btnText" android:layout_width="wrap_content" android:layout_height="44dp" android:text="Texto" />
-            <Button android:id="@+id/btnPaste" android:layout_width="wrap_content" android:layout_height="44dp" android:text="Pegar" />
-            <Button android:id="@+id/btnSearch" android:layout_width="wrap_content" android:layout_height="44dp" android:text="Buscar" />
-            <Button android:id="@+id/btnAlignLeft" android:layout_width="wrap_content" android:layout_height="44dp" android:text="Izq." />
-            <Button android:id="@+id/btnAlignCenter" android:layout_width="wrap_content" android:layout_height="44dp" android:text="Centro" />
-            <Button android:id="@+id/btnAlignRight" android:layout_width="wrap_content" android:layout_height="44dp" android:text="Der." />
-            <Button android:id="@+id/btnNudgeLeft" android:layout_width="52dp" android:layout_height="44dp" android:text="←" />
-            <Button android:id="@+id/btnNudgeRight" android:layout_width="52dp" android:layout_height="44dp" android:text="→" />
-            <Button android:id="@+id/btnImage" android:layout_width="wrap_content" android:layout_height="44dp" android:text="Imagen/Firma" />
-            <Button android:id="@+id/btnSave" android:layout_width="wrap_content" android:layout_height="44dp" android:text="Guardar" />
-            <Button android:id="@+id/btnShare" android:layout_width="wrap_content" android:layout_height="44dp" android:text="Compartir" />
-            <Button android:id="@+id/btnWhatsApp" android:layout_width="wrap_content" android:layout_height="44dp" android:text="WhatsApp" />
-            <Button android:id="@+id/btnRotate" android:layout_width="wrap_content" android:layout_height="44dp" android:text="Rotar" />
-            <Button android:id="@+id/btnDelete" android:layout_width="wrap_content" android:layout_height="44dp" android:text="Eliminar pág." />
-            <Button android:id="@+id/btnReorder" android:layout_width="wrap_content" android:layout_height="44dp" android:text="Reordenar" />
-        </LinearLayout>
-    </HorizontalScrollView>
+            android:layout_height="42dp"
+            android:text="100%"
+            android:textAllCaps="false"
+            android:textColor="#344054" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnUndo"
+            style="@style/Widget.Material3.Button.TextButton"
+            android:layout_width="48dp"
+            android:layout_height="42dp"
+            android:minWidth="0dp"
+            android:text="↶"
+            android:textSize="20sp"
+            android:textColor="#172033" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnRedo"
+            style="@style/Widget.Material3.Button.TextButton"
+            android:layout_width="48dp"
+            android:layout_height="42dp"
+            android:minWidth="0dp"
+            android:text="↷"
+            android:textSize="20sp"
+            android:textColor="#172033" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnNext"
+            style="@style/Widget.Material3.Button.TextButton"
+            android:layout_width="48dp"
+            android:layout_height="42dp"
+            android:minWidth="0dp"
+            android:text="›"
+            android:textSize="24sp"
+            android:textColor="#172033" />
+    </LinearLayout>
 
     <com.vaguer.pdfeditor.PdfPageView
         android:id="@+id/pdfView"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:background="#DADADA"
+        android:background="#DDE3EA"
         android:scaleType="fitCenter" />
 
 </LinearLayout>
