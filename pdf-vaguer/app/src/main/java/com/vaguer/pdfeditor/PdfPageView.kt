@@ -4,6 +4,7 @@ import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Matrix
 import android.graphics.Paint
+import android.graphics.Path
 import android.graphics.RectF
 import android.os.Build
 import android.util.AttributeSet
@@ -30,6 +31,7 @@ class PdfPageView @JvmOverloads constructor(
     var onTextSelectionGesture: (() -> Unit)? = null
     var onRangeSelected: ((Float, Float, Float, Float) -> Unit)? = null
     var onSelectionAdjusted: ((Float, Float, Float, Float) -> Unit)? = null
+    var onInkStroke: ((List<Pair<Float, Float>>) -> Unit)? = null
 
     private val pageMatrix = Matrix()
     private var matrixReady = false
@@ -42,26 +44,36 @@ class PdfPageView @JvmOverloads constructor(
     private var selectionRect: RectF? = null
     private var selectionMode = false
     private var dragStart: Pair<Float, Float>? = null
-    private var handleDrag = 0 // 0 ninguno, 1 izquierdo, 2 derecho
+    private var handleDrag = 0
     private var magnifier: Magnifier? = null
 
+    private var inkMode = false
+    private val inkPoints = mutableListOf<Pair<Float, Float>>()
+
     private val selectionPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = 0x4433A1FF
+        color = 0x403B82F6
         style = Paint.Style.FILL
     }
     private val selectionStroke = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = 0xFF1976D2.toInt()
+        color = 0xFF155EEF.toInt()
         style = Paint.Style.STROKE
-        strokeWidth = 2.5f
+        strokeWidth = 2f
     }
     private val handlePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = 0xFF1976D2.toInt()
+        color = 0xFF155EEF.toInt()
         style = Paint.Style.FILL
     }
     private val crosshairPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = 0xCC1976D2.toInt()
+        color = 0xCC155EEF.toInt()
         style = Paint.Style.STROKE
-        strokeWidth = 1.5f
+        strokeWidth = 1.25f
+    }
+    private val inkPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = 0xFF111827.toInt()
+        style = Paint.Style.STROKE
+        strokeWidth = 2.2f * resources.displayMetrics.density
+        strokeCap = Paint.Cap.ROUND
+        strokeJoin = Paint.Join.ROUND
     }
 
     init {
@@ -71,11 +83,11 @@ class PdfPageView @JvmOverloads constructor(
     private val scaler = ScaleGestureDetector(context, object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
         override fun onScaleBegin(detector: ScaleGestureDetector): Boolean {
             ensureMatrix()
-            return handleDrag == 0
+            return handleDrag == 0 && !inkMode
         }
 
         override fun onScale(detector: ScaleGestureDetector): Boolean {
-            if (handleDrag != 0) return false
+            if (handleDrag != 0 || inkMode) return false
             ensureMatrix()
             val next = (userZoom * detector.scaleFactor).coerceIn(minZoom, maxZoom)
             val actual = next / userZoom
@@ -110,7 +122,7 @@ class PdfPageView @JvmOverloads constructor(
         }
 
         override fun onScroll(e1: MotionEvent?, e2: MotionEvent, distanceX: Float, distanceY: Float): Boolean {
-            if (selectionMode || handleDrag != 0 || userZoom <= 1.001f) return false
+            if (selectionMode || handleDrag != 0 || inkMode || userZoom <= 1.001f) return false
             ensureMatrix()
             pageMatrix.postTranslate(-distanceX, -distanceY)
             constrainMatrix()
@@ -121,6 +133,8 @@ class PdfPageView @JvmOverloads constructor(
     })
 
     fun startRangeSelection() {
+        inkMode = false
+        inkPoints.clear()
         selectionMode = true
         dragStart = null
         handleDrag = 0
@@ -132,6 +146,20 @@ class PdfPageView @JvmOverloads constructor(
         dragStart = null
         handleDrag = 0
         dismissMagnifier()
+        invalidate()
+    }
+
+    fun startInkMode() {
+        cancelRangeSelection()
+        clearSelection()
+        inkPoints.clear()
+        inkMode = true
+        invalidate()
+    }
+
+    fun cancelInkMode() {
+        inkMode = false
+        inkPoints.clear()
         invalidate()
     }
 
@@ -234,7 +262,7 @@ class PdfPageView @JvmOverloads constructor(
 
     private fun detectHandle(x: Float, y: Float): Int {
         val mapped = mappedSelectionRect() ?: return 0
-        val radius = 34f * resources.displayMetrics.density
+        val radius = 18f * resources.displayMetrics.density
         val cy = mapped.centerY()
         if (hypot((x - mapped.left).toDouble(), (y - cy).toDouble()) <= radius) return 1
         if (hypot((x - mapped.right).toDouble(), (y - cy).toDouble()) <= radius) return 2
@@ -261,6 +289,51 @@ class PdfPageView @JvmOverloads constructor(
     }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
+        if (inkMode) {
+            if (event.pointerCount > 1) {
+                cancelInkMode()
+                parent?.requestDisallowInterceptTouchEvent(false)
+                return true
+            }
+            when (event.actionMasked) {
+                MotionEvent.ACTION_DOWN -> {
+                    val p = normalizedPoint(event.x, event.y) ?: return true
+                    inkPoints.clear()
+                    inkPoints += p
+                    normalizedTapX = p.first
+                    normalizedTapY = p.second
+                    parent?.requestDisallowInterceptTouchEvent(true)
+                    invalidate()
+                    return true
+                }
+                MotionEvent.ACTION_MOVE -> {
+                    val p = normalizedPoint(event.x, event.y) ?: return true
+                    val last = inkPoints.lastOrNull()
+                    if (last == null || hypot((p.first - last.first).toDouble(), (p.second - last.second).toDouble()) > 0.0007) {
+                        inkPoints += p
+                        invalidate()
+                    }
+                    return true
+                }
+                MotionEvent.ACTION_UP -> {
+                    val p = normalizedPoint(event.x, event.y)
+                    if (p != null) inkPoints += p
+                    val completed = inkPoints.toList()
+                    inkPoints.clear()
+                    inkMode = false
+                    parent?.requestDisallowInterceptTouchEvent(false)
+                    invalidate()
+                    if (completed.size >= 2) onInkStroke?.invoke(completed)
+                    return true
+                }
+                MotionEvent.ACTION_CANCEL -> {
+                    cancelInkMode()
+                    parent?.requestDisallowInterceptTouchEvent(false)
+                    return true
+                }
+            }
+        }
+
         if (event.actionMasked == MotionEvent.ACTION_DOWN && !selectionMode && selectionRect != null) {
             val detected = detectHandle(event.x, event.y)
             if (detected != 0) {
@@ -277,12 +350,11 @@ class PdfPageView @JvmOverloads constructor(
                     val p = normalizedPoint(event.x, event.y) ?: return true
                     val current = selectionRect ?: return true
                     val minGap = 0.0005f
-                    val adjusted = if (handleDrag == 1) {
+                    selectionRect = if (handleDrag == 1) {
                         RectF(p.first.coerceAtMost(current.right - minGap), current.top, current.right, current.bottom)
                     } else {
                         RectF(current.left, current.top, p.first.coerceAtLeast(current.left + minGap), current.bottom)
                     }
-                    selectionRect = adjusted
                     normalizedTapX = p.first
                     normalizedTapY = p.second
                     showMagnifier(event.x, event.y)
@@ -333,11 +405,7 @@ class PdfPageView @JvmOverloads constructor(
                 MotionEvent.ACTION_MOVE -> {
                     val start = dragStart ?: return true
                     val p = normalizedPoint(event.x, event.y) ?: return true
-                    val left = minOf(start.first, p.first)
-                    val right = maxOf(start.first, p.first)
-                    val top = minOf(start.second, p.second)
-                    val bottom = maxOf(start.second, p.second)
-                    setSelection(RectF(left, top, right, bottom))
+                    setSelection(RectF(minOf(start.first, p.first), minOf(start.second, p.second), maxOf(start.first, p.first), maxOf(start.second, p.second)))
                     normalizedTapX = p.first
                     normalizedTapY = p.second
                     showMagnifier(event.x, event.y)
@@ -383,18 +451,33 @@ class PdfPageView @JvmOverloads constructor(
     override fun onDraw(canvas: Canvas) {
         ensureMatrix()
         super.onDraw(canvas)
+
+        if (inkPoints.size >= 2) {
+            val d = drawable
+            if (d != null) {
+                val path = Path()
+                inkPoints.forEachIndexed { index, p ->
+                    val point = floatArrayOf(p.first * d.intrinsicWidth, p.second * d.intrinsicHeight)
+                    pageMatrix.mapPoints(point)
+                    if (index == 0) path.moveTo(point[0], point[1]) else path.lineTo(point[0], point[1])
+                }
+                canvas.drawPath(path, inkPaint)
+            }
+        }
+
         val mapped = mappedSelectionRect() ?: return
-        canvas.drawRoundRect(mapped, 4f, 4f, selectionPaint)
-        canvas.drawRoundRect(mapped, 4f, 4f, selectionStroke)
-        val r = 8f * resources.displayMetrics.density
-        canvas.drawCircle(mapped.left, mapped.centerY(), r, handlePaint)
-        canvas.drawCircle(mapped.right, mapped.centerY(), r, handlePaint)
+        canvas.drawRoundRect(mapped, 5f, 5f, selectionPaint)
+        canvas.drawRoundRect(mapped, 5f, 5f, selectionStroke)
+        val r = 6.5f * resources.displayMetrics.density
+        val stem = 7f * resources.displayMetrics.density
+        canvas.drawLine(mapped.left, mapped.centerY() - stem, mapped.left, mapped.centerY() + stem, selectionStroke)
+        canvas.drawLine(mapped.right, mapped.centerY() - stem, mapped.right, mapped.centerY() + stem, selectionStroke)
+        canvas.drawCircle(mapped.left, mapped.centerY() + stem, r, handlePaint)
+        canvas.drawCircle(mapped.right, mapped.centerY() + stem, r, handlePaint)
 
         if (selectionMode || handleDrag != 0) {
-            canvas.drawLine(mapped.left - 10f, mapped.centerY(), mapped.left + 10f, mapped.centerY(), crosshairPaint)
-            canvas.drawLine(mapped.left, mapped.centerY() - 10f, mapped.left, mapped.centerY() + 10f, crosshairPaint)
-            canvas.drawLine(mapped.right - 10f, mapped.centerY(), mapped.right + 10f, mapped.centerY(), crosshairPaint)
-            canvas.drawLine(mapped.right, mapped.centerY() - 10f, mapped.right, mapped.centerY() + 10f, crosshairPaint)
+            canvas.drawLine(mapped.left - 8f, mapped.centerY(), mapped.left + 8f, mapped.centerY(), crosshairPaint)
+            canvas.drawLine(mapped.right - 8f, mapped.centerY(), mapped.right + 8f, mapped.centerY(), crosshairPaint)
         }
     }
 
