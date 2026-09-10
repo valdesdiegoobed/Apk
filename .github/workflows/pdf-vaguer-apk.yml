@@ -1,0 +1,51 @@
+name: Compilar PDF VAGUER APK
+
+on:
+  push:
+    branches:
+      - pdf-vaguer-1.0
+    paths:
+      - 'pdf-vaguer/**'
+      - '.github/workflows/pdf-vaguer-apk.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Generar PDF-VAGUER.apk
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Descargar código
+        uses: actions/checkout@v4
+
+      - name: Configurar Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Configurar Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Compilar APK
+        working-directory: pdf-vaguer
+        run: gradle --no-daemon :app:assembleDebug --stacktrace
+
+      - name: Preparar APK
+        run: |
+          mkdir -p entrega
+          cp pdf-vaguer/app/build/outputs/apk/debug/app-debug.apk entrega/PDF-VAGUER-1.0.0.apk
+
+      - name: Publicar APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: PDF-VAGUER-Android
+          path: entrega/PDF-VAGUER-1.0.0.apk
+          if-no-files-found: error
+          retention-days: 30
