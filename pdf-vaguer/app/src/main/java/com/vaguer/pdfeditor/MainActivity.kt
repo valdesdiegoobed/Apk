@@ -2,7 +2,9 @@ package com.vaguer.pdfeditor
 
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.os.ext.SdkExtensions
 import android.view.View
 import android.widget.EditText
 import android.widget.PopupMenu
@@ -137,13 +139,30 @@ class MainActivity : AppCompatActivity() {
         openEditor(uri, file.absolutePath, file.name)
     }
 
+    private fun supportsModernPdfViewer(): Boolean {
+        return try {
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.R &&
+                SdkExtensions.getExtensionVersion(Build.VERSION_CODES.S) >= 13
+        } catch (_: Throwable) {
+            false
+        }
+    }
+
     private fun openEditor(uri: Uri, libraryPath: String?, displayName: String?) {
-        startActivity(Intent(this, ModernPdfActivity::class.java).apply {
-            data = uri
-            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            putExtra(ModernPdfActivity.EXTRA_LIBRARY_PATH, libraryPath)
-            putExtra(ModernPdfActivity.EXTRA_DISPLAY_NAME, displayName ?: "Documento.pdf")
-        })
+        if (supportsModernPdfViewer()) {
+            startActivity(Intent(this, ModernPdfActivity::class.java).apply {
+                data = uri
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                putExtra(ModernPdfActivity.EXTRA_LIBRARY_PATH, libraryPath)
+                putExtra(ModernPdfActivity.EXTRA_DISPLAY_NAME, displayName ?: "Documento.pdf")
+            })
+        } else {
+            startActivity(Intent(this, PdfEditorActivity::class.java).apply {
+                data = uri
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            })
+            toast("PDF abierto en modo compatible")
+        }
     }
 
     private fun showEntryMenu(entry: PdfLibraryStore.Entry, anchor: View) {
