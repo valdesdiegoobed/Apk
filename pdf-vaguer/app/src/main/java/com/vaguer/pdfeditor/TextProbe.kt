@@ -44,7 +44,7 @@ object TextProbe {
                         value,
                         text.xDirAdj,
                         text.yDirAdj,
-                        text.widthDirAdj.coerceAtLeast(0.35f),
+                        text.widthDirAdj.coerceAtLeast(0.25f),
                         text.heightDir.coerceAtLeast(1f),
                         text.fontSizeInPt.coerceAtLeast(1f),
                         text.font?.name ?: "Fuente PDF"
@@ -73,21 +73,27 @@ object TextProbe {
                 (target.x + target.width / 2f - x).toDouble(),
                 (target.y - target.height / 2f - yTop).toDouble()
             ).toFloat()
-            if (distance > max(32f, target.size * 2.7f)) return null
+            if (distance > max(22f, target.size * 2.0f)) return null
 
+            val lineTolerance = max(1.8f, target.size * 0.30f)
             val sameLine = glyphs
-                .filter { abs(it.y - target.y) <= max(2.8f, target.size * 0.48f) }
+                .filter { abs(it.y - target.y) <= lineTolerance }
                 .sortedBy { it.x }
 
             val targetIndex = sameLine.indices.minByOrNull { i ->
                 abs((sameLine[i].x + sameLine[i].width / 2f) - (target.x + target.width / 2f))
             } ?: return null
 
+            fun sameStyle(a: Glyph, b: Glyph): Boolean {
+                return a.fontName == b.fontName && abs(a.size - b.size) <= max(0.45f, a.size * 0.08f)
+            }
+
             fun joinable(left: Glyph, right: Glyph): Boolean {
+                if (!sameStyle(left, right)) return false
                 if (left.text.any { it.isWhitespace() } || right.text.any { it.isWhitespace() }) return false
                 val gap = right.x - (left.x + left.width)
-                val allowance = max(left.size, right.size) * 0.50f
-                return gap in (-allowance * 0.30f)..allowance
+                val allowance = max(left.size, right.size) * 0.42f
+                return gap in (-allowance * 0.25f)..allowance
             }
 
             var start = targetIndex
@@ -118,45 +124,59 @@ object TextProbe {
             val y1 = minOf(top, bottom)
             val y2 = maxOf(top, bottom)
             val targetY = (y1 + y2) / 2f
+            val targetX = (x1 + x2) / 2f
 
-            val xCandidates = glyphs.filter { g ->
-                val gx1 = g.x
-                val gx2 = g.x + g.width
-                gx2 >= x1 - 1.5f && gx1 <= x2 + 1.5f
-            }
-            if (xCandidates.isEmpty()) return null
-
-            val anchor = xCandidates.minByOrNull { g ->
+            val anchor = glyphs.minByOrNull { g ->
                 val cy = g.y - g.height / 2f
-                abs(cy - targetY)
+                val vertical = abs(cy - targetY)
+                val horizontal = when {
+                    targetX < g.x -> g.x - targetX
+                    targetX > g.x + g.width -> targetX - (g.x + g.width)
+                    else -> 0f
+                }
+                vertical * 3f + horizontal * 0.12f
             } ?: return null
 
-            val sameLine = glyphs.filter { g ->
-                abs(g.y - anchor.y) <= max(2.8f, anchor.size * 0.48f)
-            }.sortedBy { it.x }
+            val lineTolerance = max(1.8f, anchor.size * 0.30f)
+            val sameLine = glyphs
+                .filter { abs(it.y - anchor.y) <= lineTolerance }
+                .sortedBy { it.x }
+            if (sameLine.isEmpty()) return null
 
-            val selected = sameLine.filter { g ->
+            val rough = sameLine.filter { g ->
                 val gx1 = g.x
                 val gx2 = g.x + g.width
                 val overlap = minOf(gx2, x2) - maxOf(gx1, x1)
-                val overlapRatio = overlap / g.width.coerceAtLeast(0.35f)
-                overlapRatio >= 0.12f || (g.x + g.width / 2f) in x1..x2
+                val ratio = overlap / g.width.coerceAtLeast(0.25f)
+                ratio >= 0.42f || (g.x + g.width / 2f) in x1..x2
             }
-            if (selected.isEmpty()) return null
+            if (rough.isEmpty()) return null
 
-            val dominantFont = selected.groupBy { it.fontName }
-                .maxByOrNull { (_, list) -> list.sumOf { it.text.length } }
+            val dominantFont = rough.groupBy { it.fontName }
+                .maxByOrNull { (_, list) -> list.sumOf { it.text.length.coerceAtLeast(1) } }
                 ?.key ?: anchor.fontName
-            val dominantSize = selected.filter { it.fontName == dominantFont }
+            val dominantSize = rough.filter { it.fontName == dominantFont }
                 .map { it.size }
                 .average().toFloat().takeIf { !it.isNaN() } ?: anchor.size
 
-            val sameFormat = selected.filter {
-                it.fontName == dominantFont && abs(it.size - dominantSize) <= max(0.55f, dominantSize * 0.10f)
+            val formattedLine = sameLine.filter {
+                it.fontName == dominantFont && abs(it.size - dominantSize) <= max(0.45f, dominantSize * 0.08f)
             }.sortedBy { it.x }
-            if (sameFormat.isEmpty()) return null
+            if (formattedLine.isEmpty()) return null
 
-            buildSelection(sameFormat, sameFormat.first())
+            val selectedIndices = formattedLine.indices.filter { i ->
+                val g = formattedLine[i]
+                val gx1 = g.x
+                val gx2 = g.x + g.width
+                val overlap = minOf(gx2, x2) - maxOf(gx1, x1)
+                val ratio = overlap / g.width.coerceAtLeast(0.25f)
+                ratio >= 0.42f || (g.x + g.width / 2f) in x1..x2
+            }
+            if (selectedIndices.isEmpty()) return null
+
+            val first = selectedIndices.first()
+            val last = selectedIndices.last()
+            buildSelection(formattedLine.subList(first, last + 1), formattedLine[first])
         } catch (_: Exception) {
             null
         }
@@ -170,7 +190,7 @@ object TextProbe {
             if (index > 0) {
                 val prev = sorted[index - 1]
                 val gap = g.x - (prev.x + prev.width)
-                val spaceThreshold = max(prev.size, g.size) * 0.28f
+                val spaceThreshold = max(prev.size, g.size) * 0.24f
                 if (gap > spaceThreshold && !sb.endsWith(" ")) sb.append(' ')
             }
             sb.append(g.text)
@@ -188,8 +208,8 @@ object TextProbe {
             text = value,
             x = left,
             yTop = baseline,
-            width = (right - left).coerceAtLeast(2f),
-            height = height.coerceAtLeast(avgSize * 0.75f),
+            width = (right - left).coerceAtLeast(1f),
+            height = height.coerceAtLeast(avgSize * 0.72f),
             fontSize = avgSize,
             fontName = target.fontName
         )
