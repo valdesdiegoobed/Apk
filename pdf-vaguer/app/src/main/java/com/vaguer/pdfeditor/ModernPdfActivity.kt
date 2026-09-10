@@ -32,13 +32,21 @@ import kotlin.math.max
 
 class ModernPdfActivity : AppCompatActivity() {
 
+    companion object {
+        const val EXTRA_LIBRARY_PATH = "pdf_vaguer_library_path"
+        const val EXTRA_DISPLAY_NAME = "pdf_vaguer_display_name"
+    }
+
     private lateinit var working: File
+    private var libraryPath: String? = null
+    private var displayName: String = "Documento.pdf"
     private var viewer: VaguerPdfViewerFragment? = null
     private var currentPage = 0
     private var selectedText: String? = null
     private var selectedBounds: List<PdfRect> = emptyList()
 
     private lateinit var txtStatus: TextView
+    private lateinit var txtTitle: TextView
     private lateinit var btnUndo: Button
     private lateinit var btnRedo: Button
     private lateinit var btnEdit: Button
@@ -61,13 +69,20 @@ class ModernPdfActivity : AppCompatActivity() {
         setContentView(R.layout.activity_modern_pdf)
 
         val source = intent.data ?: return finish()
+        libraryPath = intent.getStringExtra(EXTRA_LIBRARY_PATH)
+        displayName = intent.getStringExtra(EXTRA_DISPLAY_NAME)?.takeIf { it.isNotBlank() }
+            ?: PdfLibraryStore.queryName(this, source)
+            ?: "Documento.pdf"
+
         working = File(cacheDir, "modern_${System.currentTimeMillis()}.pdf")
         PdfOps.copyUriToFile(this, source, working)
 
         txtStatus = findViewById(R.id.txtModernStatus)
+        txtTitle = findViewById(R.id.txtModernTitle)
         btnUndo = findViewById(R.id.btnModernUndo)
         btnRedo = findViewById(R.id.btnModernRedo)
         btnEdit = findViewById(R.id.btnModernEdit)
+        txtTitle.text = displayName
 
         findViewById<Button>(R.id.btnModernSearch).setOnClickListener {
             viewer?.activateSearch() ?: toast("Espera a que termine de abrir el PDF")
@@ -75,7 +90,11 @@ class ModernPdfActivity : AppCompatActivity() {
         btnEdit.setOnClickListener { editSelectedText() }
         btnUndo.setOnClickListener { undoChange() }
         btnRedo.setOnClickListener { redoChange() }
-        findViewById<Button>(R.id.btnModernSave).setOnClickListener { saveAs.launch("PDF_editado.pdf") }
+        findViewById<Button>(R.id.btnModernLibrarySave).setOnClickListener { saveInLibrary() }
+        findViewById<Button>(R.id.btnModernSave).setOnClickListener {
+            val base = displayName.removeSuffix(".pdf").removeSuffix(".PDF")
+            saveAs.launch("${base}_editado.pdf")
+        }
         findViewById<Button>(R.id.btnModernShare).setOnClickListener { share(null) }
         findViewById<Button>(R.id.btnModernWhatsApp).setOnClickListener { shareWhatsApp() }
         findViewById<Button>(R.id.btnModernTools).setOnClickListener { openClassicTools() }
@@ -88,6 +107,19 @@ class ModernPdfActivity : AppCompatActivity() {
         super.onDestroy()
         undoStack.forEach { it.delete() }
         redoStack.forEach { it.delete() }
+    }
+
+    private fun saveInLibrary() {
+        runCatching {
+            PdfLibraryStore.save(this, working, displayName, libraryPath)
+        }.onSuccess { saved ->
+            libraryPath = saved.absolutePath
+            displayName = saved.name
+            txtTitle.text = displayName
+            toast("Guardado en PDF VAGUER")
+        }.onFailure {
+            toast("No se pudo guardar en PDF VAGUER: ${it.message ?: "error"}")
+        }
     }
 
     private fun showViewer(page: Int) {
