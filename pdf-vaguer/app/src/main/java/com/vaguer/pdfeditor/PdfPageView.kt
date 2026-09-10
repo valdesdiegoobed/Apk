@@ -13,6 +13,7 @@ import android.view.ScaleGestureDetector
 import android.widget.ImageView
 import android.widget.Magnifier
 import androidx.appcompat.widget.AppCompatImageView
+import kotlin.math.hypot
 
 class PdfPageView @JvmOverloads constructor(
     context: Context,
@@ -28,6 +29,7 @@ class PdfPageView @JvmOverloads constructor(
     var onSingleTapPositioned: (() -> Unit)? = null
     var onTextSelectionGesture: (() -> Unit)? = null
     var onRangeSelected: ((Float, Float, Float, Float) -> Unit)? = null
+    var onSelectionAdjusted: ((Float, Float, Float, Float) -> Unit)? = null
 
     private val pageMatrix = Matrix()
     private var matrixReady = false
@@ -40,6 +42,7 @@ class PdfPageView @JvmOverloads constructor(
     private var selectionRect: RectF? = null
     private var selectionMode = false
     private var dragStart: Pair<Float, Float>? = null
+    private var handleDrag = 0 // 0 ninguno, 1 izquierdo, 2 derecho
     private var magnifier: Magnifier? = null
 
     private val selectionPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -68,10 +71,11 @@ class PdfPageView @JvmOverloads constructor(
     private val scaler = ScaleGestureDetector(context, object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
         override fun onScaleBegin(detector: ScaleGestureDetector): Boolean {
             ensureMatrix()
-            return true
+            return handleDrag == 0
         }
 
         override fun onScale(detector: ScaleGestureDetector): Boolean {
+            if (handleDrag != 0) return false
             ensureMatrix()
             val next = (userZoom * detector.scaleFactor).coerceIn(minZoom, maxZoom)
             val actual = next / userZoom
@@ -106,7 +110,7 @@ class PdfPageView @JvmOverloads constructor(
         }
 
         override fun onScroll(e1: MotionEvent?, e2: MotionEvent, distanceX: Float, distanceY: Float): Boolean {
-            if (selectionMode || userZoom <= 1.001f) return false
+            if (selectionMode || handleDrag != 0 || userZoom <= 1.001f) return false
             ensureMatrix()
             pageMatrix.postTranslate(-distanceX, -distanceY)
             constrainMatrix()
@@ -119,12 +123,14 @@ class PdfPageView @JvmOverloads constructor(
     fun startRangeSelection() {
         selectionMode = true
         dragStart = null
+        handleDrag = 0
         clearSelection()
     }
 
     fun cancelRangeSelection() {
         selectionMode = false
         dragStart = null
+        handleDrag = 0
         dismissMagnifier()
         invalidate()
     }
@@ -136,6 +142,7 @@ class PdfPageView @JvmOverloads constructor(
 
     fun clearSelection() {
         selectionRect = null
+        handleDrag = 0
         invalidate()
     }
 
@@ -213,6 +220,27 @@ class PdfPageView @JvmOverloads constructor(
         return true
     }
 
+    private fun mappedSelectionRect(): RectF? {
+        val rect = selectionRect ?: return null
+        val d = drawable ?: return null
+        val source = RectF(
+            rect.left * d.intrinsicWidth,
+            rect.top * d.intrinsicHeight,
+            rect.right * d.intrinsicWidth,
+            rect.bottom * d.intrinsicHeight
+        )
+        return RectF(source).also { pageMatrix.mapRect(it) }
+    }
+
+    private fun detectHandle(x: Float, y: Float): Int {
+        val mapped = mappedSelectionRect() ?: return 0
+        val radius = 34f * resources.displayMetrics.density
+        val cy = mapped.centerY()
+        if (hypot((x - mapped.left).toDouble(), (y - cy).toDouble()) <= radius) return 1
+        if (hypot((x - mapped.right).toDouble(), (y - cy).toDouble()) <= radius) return 2
+        return 0
+    }
+
     private fun showMagnifier(x: Float, y: Float) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             if (magnifier == null) magnifier = Magnifier(this)
@@ -233,6 +261,51 @@ class PdfPageView @JvmOverloads constructor(
     }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
+        if (event.actionMasked == MotionEvent.ACTION_DOWN && !selectionMode && selectionRect != null) {
+            val detected = detectHandle(event.x, event.y)
+            if (detected != 0) {
+                handleDrag = detected
+                showMagnifier(event.x, event.y)
+                parent?.requestDisallowInterceptTouchEvent(true)
+                return true
+            }
+        }
+
+        if (handleDrag != 0) {
+            when (event.actionMasked) {
+                MotionEvent.ACTION_MOVE -> {
+                    val p = normalizedPoint(event.x, event.y) ?: return true
+                    val current = selectionRect ?: return true
+                    val minGap = 0.0005f
+                    val adjusted = if (handleDrag == 1) {
+                        RectF(p.first.coerceAtMost(current.right - minGap), current.top, current.right, current.bottom)
+                    } else {
+                        RectF(current.left, current.top, p.first.coerceAtLeast(current.left + minGap), current.bottom)
+                    }
+                    selectionRect = adjusted
+                    normalizedTapX = p.first
+                    normalizedTapY = p.second
+                    showMagnifier(event.x, event.y)
+                    invalidate()
+                    return true
+                }
+                MotionEvent.ACTION_UP -> {
+                    val current = selectionRect
+                    dismissMagnifier()
+                    handleDrag = 0
+                    parent?.requestDisallowInterceptTouchEvent(false)
+                    if (current != null) onSelectionAdjusted?.invoke(current.left, current.top, current.right, current.bottom)
+                    return true
+                }
+                MotionEvent.ACTION_CANCEL -> {
+                    dismissMagnifier()
+                    handleDrag = 0
+                    parent?.requestDisallowInterceptTouchEvent(false)
+                    return true
+                }
+            }
+        }
+
         scaler.onTouchEvent(event)
 
         if (event.actionMasked == MotionEvent.ACTION_POINTER_DOWN || event.pointerCount > 1 || scaler.isInProgress) {
@@ -310,23 +383,14 @@ class PdfPageView @JvmOverloads constructor(
     override fun onDraw(canvas: Canvas) {
         ensureMatrix()
         super.onDraw(canvas)
-        val rect = selectionRect ?: return
-        val d = drawable ?: return
-        val source = RectF(
-            rect.left * d.intrinsicWidth,
-            rect.top * d.intrinsicHeight,
-            rect.right * d.intrinsicWidth,
-            rect.bottom * d.intrinsicHeight
-        )
-        val mapped = RectF(source)
-        pageMatrix.mapRect(mapped)
+        val mapped = mappedSelectionRect() ?: return
         canvas.drawRoundRect(mapped, 4f, 4f, selectionPaint)
         canvas.drawRoundRect(mapped, 4f, 4f, selectionStroke)
-        val r = 7f
+        val r = 8f * resources.displayMetrics.density
         canvas.drawCircle(mapped.left, mapped.centerY(), r, handlePaint)
         canvas.drawCircle(mapped.right, mapped.centerY(), r, handlePaint)
 
-        if (selectionMode) {
+        if (selectionMode || handleDrag != 0) {
             canvas.drawLine(mapped.left - 10f, mapped.centerY(), mapped.left + 10f, mapped.centerY(), crosshairPaint)
             canvas.drawLine(mapped.left, mapped.centerY() - 10f, mapped.left, mapped.centerY() + 10f, crosshairPaint)
             canvas.drawLine(mapped.right - 10f, mapped.centerY(), mapped.right + 10f, mapped.centerY(), crosshairPaint)
