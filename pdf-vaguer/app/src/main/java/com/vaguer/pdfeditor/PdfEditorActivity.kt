@@ -5,6 +5,7 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
+import android.graphics.Color
 import android.graphics.RectF
 import android.graphics.pdf.PdfRenderer
 import android.net.Uri
@@ -22,15 +23,19 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.FileProvider
 import com.tom_roush.pdfbox.pdmodel.PDDocument
+import com.tom_roush.pdfbox.pdmodel.PDPage
 import com.tom_roush.pdfbox.pdmodel.PDPageContentStream
 import com.tom_roush.pdfbox.pdmodel.common.PDRectangle
 import com.tom_roush.pdfbox.pdmodel.font.PDFont
 import com.tom_roush.pdfbox.pdmodel.font.PDType1Font
 import com.tom_roush.pdfbox.pdmodel.graphics.image.PDImageXObject
+import com.tom_roush.pdfbox.text.PDFTextStripper
 import com.vaguer.pdfeditor.databinding.ActivityPdfEditorBinding
 import java.io.File
 import java.io.FileInputStream
+import java.util.ArrayDeque
 import java.util.Locale
+import kotlin.math.max
 
 class PdfEditorActivity : AppCompatActivity() {
     private enum class TextAlignMode { LEFT, CENTER, RIGHT }
@@ -44,6 +49,11 @@ class PdfEditorActivity : AppCompatActivity() {
     private var alignMode = TextAlignMode.LEFT
     private var selectionGuideLeft: Float? = null
     private var selectionGuideRight: Float? = null
+    private var renderedBitmap: Bitmap? = null
+
+    private val undoStack = ArrayDeque<File>()
+    private val redoStack = ArrayDeque<File>()
+    private val historyLimit = 20
 
     private val pickImage = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         uri ?: return@registerForActivityResult
@@ -68,7 +78,14 @@ class PdfEditorActivity : AppCompatActivity() {
 
         bindButtons()
         updateAlignmentUi()
+        updateHistoryUi()
         render()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        undoStack.forEach { it.delete() }
+        redoStack.forEach { it.delete() }
     }
 
     private fun bindButtons() {
@@ -86,9 +103,12 @@ class PdfEditorActivity : AppCompatActivity() {
                 render()
             }
         }
+        b.btnUndo.setOnClickListener { undoChange() }
+        b.btnRedo.setOnClickListener { redoChange() }
         b.btnSelect.setOnClickListener {
             clearSelection()
             b.pdfView.startRangeSelection()
+            toast("Arrastra sobre el texto. Después puedes ajustar los puntos azules.")
         }
         b.btnEdit.setOnClickListener {
             if (selection == null) selectNearestText(showMenu = false)
@@ -96,12 +116,13 @@ class PdfEditorActivity : AppCompatActivity() {
         }
         b.btnText.setOnClickListener { addTextDialog() }
         b.btnPaste.setOnClickListener { pasteClipboard() }
+        b.btnSearch.setOnClickListener { searchDialog() }
 
         b.btnAlignLeft.setOnClickListener { setAlignMode(TextAlignMode.LEFT) }
         b.btnAlignCenter.setOnClickListener { setAlignMode(TextAlignMode.CENTER) }
         b.btnAlignRight.setOnClickListener { setAlignMode(TextAlignMode.RIGHT) }
-        b.btnNudgeLeft.setOnClickListener { moveSelectionBy(-2.5f) }
-        b.btnNudgeRight.setOnClickListener { moveSelectionBy(2.5f) }
+        b.btnNudgeLeft.setOnClickListener { moveSelectionBy(-2.0f) }
+        b.btnNudgeRight.setOnClickListener { moveSelectionBy(2.0f) }
 
         b.btnImage.setOnClickListener {
             if (!hasTap()) toast("Primero toca el lugar de la página donde irá la imagen o firma")
@@ -119,8 +140,12 @@ class PdfEditorActivity : AppCompatActivity() {
             AlertDialog.Builder(this).setTitle("Eliminar página ${pageIndex + 1}?")
                 .setPositiveButton("Eliminar") { _, _ ->
                     clearSelection()
-                    mutate { doc -> doc.removePage(pageIndex) }
-                    if (pageIndex >= pageCount - 1) pageIndex = (pageIndex - 1).coerceAtLeast(0)
+                    val oldCount = pageCount
+                    val ok = mutate { doc -> doc.removePage(pageIndex) }
+                    if (ok && pageIndex >= oldCount - 1) {
+                        pageIndex = (pageIndex - 1).coerceAtLeast(0)
+                        render()
+                    }
                 }.setNegativeButton("Cancelar", null).show()
         }
         b.btnReorder.setOnClickListener { reorderDialog() }
@@ -131,6 +156,9 @@ class PdfEditorActivity : AppCompatActivity() {
         b.pdfView.onSingleTapPositioned = { clearSelection() }
         b.pdfView.onTextSelectionGesture = { selectNearestText(showMenu = true) }
         b.pdfView.onRangeSelected = { left, top, right, bottom ->
+            selectDraggedRange(left, top, right, bottom)
+        }
+        b.pdfView.onSelectionAdjusted = { left, top, right, bottom ->
             selectDraggedRange(left, top, right, bottom)
         }
     }
@@ -146,6 +174,13 @@ class PdfEditorActivity : AppCompatActivity() {
         b.btnAlignRight.alpha = if (alignMode == TextAlignMode.RIGHT) 1f else 0.55f
     }
 
+    private fun updateHistoryUi() {
+        b.btnUndo.isEnabled = undoStack.isNotEmpty()
+        b.btnRedo.isEnabled = redoStack.isNotEmpty()
+        b.btnUndo.alpha = if (undoStack.isNotEmpty()) 1f else 0.35f
+        b.btnRedo.alpha = if (redoStack.isNotEmpty()) 1f else 0.35f
+    }
+
     private fun render() {
         var pfd: ParcelFileDescriptor? = null
         var renderer: PdfRenderer? = null
@@ -159,9 +194,10 @@ class PdfEditorActivity : AppCompatActivity() {
             val maxW = 1800
             val scale = maxW.toFloat() / page.width
             val bmp = Bitmap.createBitmap(maxW, (page.height * scale).toInt(), Bitmap.Config.ARGB_8888)
-            bmp.eraseColor(android.graphics.Color.WHITE)
+            bmp.eraseColor(Color.WHITE)
             page.render(bmp, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
             page.close()
+            renderedBitmap = bmp
             b.pdfView.setImageBitmap(bmp)
             b.txtPage.text = "Página ${pageIndex + 1} / $pageCount"
         } catch (e: Exception) {
@@ -420,6 +456,44 @@ class PdfEditorActivity : AppCompatActivity() {
             .show()
     }
 
+    private fun searchDialog() {
+        val input = EditText(this).apply {
+            hint = "Texto a buscar"
+            inputType = InputType.TYPE_CLASS_TEXT
+        }
+        AlertDialog.Builder(this)
+            .setTitle("Buscar en PDF")
+            .setView(input)
+            .setPositiveButton("Buscar") { _, _ ->
+                val q = input.text.toString().trim()
+                if (q.isNotEmpty()) searchText(q)
+            }
+            .setNegativeButton("Cancelar", null)
+            .show()
+    }
+
+    private fun searchText(query: String) {
+        runCatching {
+            PDDocument.load(working).use { doc ->
+                val stripper = PDFTextStripper().apply { sortByPosition = true }
+                val order = ((pageIndex until doc.numberOfPages) + (0 until pageIndex)).distinct()
+                for (i in order) {
+                    stripper.startPage = i + 1
+                    stripper.endPage = i + 1
+                    val text = stripper.getText(doc)
+                    if (text.contains(query, ignoreCase = true)) {
+                        clearSelection()
+                        pageIndex = i
+                        render()
+                        toast("Encontrado en página ${i + 1}")
+                        return
+                    }
+                }
+            }
+            toast("No se encontró “$query”")
+        }.onFailure { toast("No se pudo buscar: ${it.message}") }
+    }
+
     private fun addText(value: String, fontSize: Float) {
         val nx = b.pdfView.normalizedTapX ?: return
         val ny = b.pdfView.normalizedTapY ?: return
@@ -446,13 +520,14 @@ class PdfEditorActivity : AppCompatActivity() {
         val sel = selection ?: return
         val guideLeft = selectionGuideLeft ?: sel.x
         val guideRight = selectionGuideRight ?: (sel.x + sel.width)
+        val bg = sampleBackgroundColor(sel)
         mutate { doc ->
             val page = doc.getPage(pageIndex)
             val box: PDRectangle = page.cropBox ?: page.mediaBox
             val baseline = box.height - sel.yTop
             val probe = FontProbe.nearest(doc, pageIndex, sel.x, sel.yTop)
             val preferred = probe?.font ?: PDType1Font.HELVETICA
-            coverText(doc, page, sel, baseline)
+            coverText(doc, page, sel, baseline, bg)
             if (value.isNotBlank()) {
                 val width = textWidth(preferred, fontSize, value)
                 val rawX = when (alignMode) {
@@ -469,29 +544,21 @@ class PdfEditorActivity : AppCompatActivity() {
 
     private fun moveSelectionBy(dx: Float) {
         val sel = selection ?: return toast("Selecciona primero el texto que quieres mover")
+        val bg = sampleBackgroundColor(sel)
         var newX = sel.x
-        var applied = false
-        runCatching {
-            val temp = File(cacheDir, "move_${System.nanoTime()}.pdf")
-            PDDocument.load(working).use { doc ->
-                val page = doc.getPage(pageIndex)
-                val box: PDRectangle = page.cropBox ?: page.mediaBox
-                val baseline = box.height - sel.yTop
-                val probe = FontProbe.nearest(doc, pageIndex, sel.x, sel.yTop)
-                val preferred = probe?.font ?: PDType1Font.HELVETICA
-                val width = textWidth(preferred, sel.fontSize, sel.text)
-                newX = (sel.x + dx).coerceIn(0f, (box.width - width).coerceAtLeast(0f))
-                coverText(doc, page, sel, baseline)
-                writeText(doc, page, newX, baseline, preferred, sel.fontSize, sel.text)
-                doc.save(temp)
-            }
-            temp.copyTo(working, overwrite = true)
-            temp.delete()
-            applied = true
-            render()
-        }.onFailure { toast("No se pudo mover el texto: ${it.message}") }
+        val ok = mutate { doc ->
+            val page = doc.getPage(pageIndex)
+            val box: PDRectangle = page.cropBox ?: page.mediaBox
+            val baseline = box.height - sel.yTop
+            val probe = FontProbe.nearest(doc, pageIndex, sel.x, sel.yTop)
+            val preferred = probe?.font ?: PDType1Font.HELVETICA
+            val width = textWidth(preferred, sel.fontSize, sel.text)
+            newX = (sel.x + dx).coerceIn(0f, (box.width - width).coerceAtLeast(0f))
+            coverText(doc, page, sel, baseline, bg)
+            writeText(doc, page, newX, baseline, preferred, sel.fontSize, sel.text)
+        }
 
-        if (applied) {
+        if (ok) {
             val actualDx = newX - sel.x
             selection = sel.copy(x = newX)
             selectionGuideLeft = (selectionGuideLeft ?: sel.x) + actualDx
@@ -501,20 +568,74 @@ class PdfEditorActivity : AppCompatActivity() {
     }
 
     private fun eraseSelection(sel: TextProbe.Selection) {
+        val bg = sampleBackgroundColor(sel)
         mutate { doc ->
             val page = doc.getPage(pageIndex)
             val box: PDRectangle = page.cropBox ?: page.mediaBox
             val baseline = box.height - sel.yTop
-            coverText(doc, page, sel, baseline)
+            coverText(doc, page, sel, baseline, bg)
         }
         clearSelection()
     }
 
-    private fun coverText(doc: PDDocument, page: com.tom_roush.pdfbox.pdmodel.PDPage, sel: TextProbe.Selection, baseline: Float) {
-        val pad = 1.5f
-        val h = (sel.height * 1.35f).coerceAtLeast(sel.fontSize * 1.15f)
+    private fun sampleBackgroundColor(sel: TextProbe.Selection): Int {
+        val bmp = renderedBitmap ?: return Color.WHITE
+        var boxW = 1f
+        var boxH = 1f
+        runCatching {
+            PDDocument.load(working).use { doc ->
+                val page = doc.getPage(pageIndex)
+                val box = page.cropBox ?: page.mediaBox
+                boxW = box.width
+                boxH = box.height
+            }
+        }
+        if (boxW <= 1f || boxH <= 1f) return Color.WHITE
+
+        val left = ((sel.x / boxW) * bmp.width).toInt().coerceIn(0, bmp.width - 1)
+        val right = (((sel.x + sel.width) / boxW) * bmp.width).toInt().coerceIn(0, bmp.width - 1)
+        val top = (((sel.yTop - sel.height * 1.20f) / boxH) * bmp.height).toInt().coerceIn(0, bmp.height - 1)
+        val bottom = (((sel.yTop + sel.height * 0.30f) / boxH) * bmp.height).toInt().coerceIn(0, bmp.height - 1)
+        val pad = max(3, (bmp.width / 600f).toInt())
+        val samples = mutableListOf<Int>()
+
+        fun add(x: Int, y: Int) {
+            if (x !in 0 until bmp.width || y !in 0 until bmp.height) return
+            val c = bmp.getPixel(x, y)
+            if (Color.alpha(c) < 220) return
+            val lum = (Color.red(c) + Color.green(c) + Color.blue(c)) / 3
+            if (lum < 55) return
+            samples += c
+        }
+
+        val stepX = max(1, (right - left).coerceAtLeast(1) / 40)
+        var x = left
+        while (x <= right) {
+            add(x, top - pad)
+            add(x, bottom + pad)
+            x += stepX
+        }
+        val stepY = max(1, (bottom - top).coerceAtLeast(1) / 20)
+        var y = top
+        while (y <= bottom) {
+            add(left - pad, y)
+            add(right + pad, y)
+            y += stepY
+        }
+        if (samples.size < 4) return Color.WHITE
+
+        val rs = samples.map { Color.red(it) }.sorted()
+        val gs = samples.map { Color.green(it) }.sorted()
+        val bs = samples.map { Color.blue(it) }.sorted()
+        val mid = samples.size / 2
+        return Color.rgb(rs[mid], gs[mid], bs[mid])
+    }
+
+    private fun coverText(doc: PDDocument, page: PDPage, sel: TextProbe.Selection, baseline: Float, backgroundColor: Int) {
+        val pad = 1.2f
+        val h = (sel.height * 1.28f).coerceAtLeast(sel.fontSize * 1.08f)
         PDPageContentStream(doc, page, PDPageContentStream.AppendMode.APPEND, true, true).use { cs ->
-            cs.setNonStrokingColor(255, 255, 255)
+            cs.setNonStrokingColor(Color.red(backgroundColor), Color.green(backgroundColor), Color.blue(backgroundColor))
             cs.addRect((sel.x - pad).coerceAtLeast(0f), baseline - pad, sel.width + pad * 2f, h + pad * 2f)
             cs.fill()
         }
@@ -530,7 +651,7 @@ class PdfEditorActivity : AppCompatActivity() {
 
     private fun writeText(
         doc: PDDocument,
-        page: com.tom_roush.pdfbox.pdmodel.PDPage,
+        page: PDPage,
         x: Float,
         y: Float,
         preferred: PDFont,
@@ -588,6 +709,7 @@ class PdfEditorActivity : AppCompatActivity() {
             .setPositiveButton("Aplicar") { _, _ ->
                 val order = input.text.toString().split(',').mapNotNull { it.trim().toIntOrNull() }
                 if (order.isEmpty() || order.any { it !in 1..pageCount }) return@setPositiveButton toast("Orden no válido")
+                val before = snapshotCurrent("undo")
                 runCatching {
                     clearSelection()
                     val temp = File(cacheDir, "reorder_${System.nanoTime()}.pdf")
@@ -599,16 +721,34 @@ class PdfEditorActivity : AppCompatActivity() {
                     }
                     temp.copyTo(working, overwrite = true)
                     temp.delete()
+                    pushUndoSnapshot(before)
                     pageIndex = 0
                     render()
-                }.onFailure { toast(it.message ?: "No se pudo reordenar") }
+                }.onFailure {
+                    before.delete()
+                    toast(it.message ?: "No se pudo reordenar")
+                }
             }
             .setNegativeButton("Cancelar", null)
             .show()
     }
 
-    private fun mutate(block: (PDDocument) -> Unit) {
-        runCatching {
+    private fun snapshotCurrent(prefix: String): File {
+        val f = File(cacheDir, "${prefix}_${System.nanoTime()}.pdf")
+        working.copyTo(f, overwrite = true)
+        return f
+    }
+
+    private fun pushUndoSnapshot(snapshot: File) {
+        undoStack.addLast(snapshot)
+        while (undoStack.size > historyLimit) undoStack.removeFirst().delete()
+        while (redoStack.isNotEmpty()) redoStack.removeLast().delete()
+        updateHistoryUi()
+    }
+
+    private fun mutate(block: (PDDocument) -> Unit): Boolean {
+        val before = snapshotCurrent("undo")
+        return runCatching {
             val temp = File(cacheDir, "mut_${System.nanoTime()}.pdf")
             PDDocument.load(working).use { doc ->
                 block(doc)
@@ -616,8 +756,42 @@ class PdfEditorActivity : AppCompatActivity() {
             }
             temp.copyTo(working, overwrite = true)
             temp.delete()
+            pushUndoSnapshot(before)
             render()
-        }.onFailure { toast("No se pudo aplicar el cambio: ${it.message}") }
+            true
+        }.getOrElse {
+            before.delete()
+            toast("No se pudo aplicar el cambio: ${it.message}")
+            false
+        }
+    }
+
+    private fun undoChange() {
+        if (undoStack.isEmpty()) return
+        clearSelection()
+        val current = snapshotCurrent("redo")
+        val previous = undoStack.removeLast()
+        current.let { redoStack.addLast(it) }
+        previous.copyTo(working, overwrite = true)
+        previous.delete()
+        while (redoStack.size > historyLimit) redoStack.removeFirst().delete()
+        pageIndex = pageIndex.coerceAtLeast(0)
+        render()
+        updateHistoryUi()
+    }
+
+    private fun redoChange() {
+        if (redoStack.isEmpty()) return
+        clearSelection()
+        val current = snapshotCurrent("undo")
+        val next = redoStack.removeLast()
+        undoStack.addLast(current)
+        next.copyTo(working, overwrite = true)
+        next.delete()
+        while (undoStack.size > historyLimit) undoStack.removeFirst().delete()
+        pageIndex = pageIndex.coerceAtLeast(0)
+        render()
+        updateHistoryUi()
     }
 
     private fun share(targetPackage: String?) {
