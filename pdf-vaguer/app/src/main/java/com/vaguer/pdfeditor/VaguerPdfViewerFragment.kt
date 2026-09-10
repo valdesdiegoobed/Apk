@@ -26,7 +26,7 @@ class VaguerPdfViewerFragment : PdfViewerFragment() {
         internalPdfView = pdfView
 
         pdfView.addOnSelectionChangedListener(object : PdfView.OnSelectionChangedListener {
-            override fun onSelectionChanged(newSelection: Selection) {
+            override fun onSelectionChanged(newSelection: Selection?) {
                 if (newSelection is TextSelection) {
                     onTextSelection?.invoke(newSelection.text.toString(), newSelection.bounds)
                 } else {
