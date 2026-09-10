@@ -27,6 +27,16 @@
             android:text="Página 1/1"
             android:textStyle="bold" />
         <Button
+            android:id="@+id/btnUndo"
+            android:layout_width="52dp"
+            android:layout_height="44dp"
+            android:text="↶" />
+        <Button
+            android:id="@+id/btnRedo"
+            android:layout_width="52dp"
+            android:layout_height="44dp"
+            android:text="↷" />
+        <Button
             android:id="@+id/btnNext"
             android:layout_width="48dp"
             android:layout_height="44dp"
@@ -49,6 +59,7 @@
             <Button android:id="@+id/btnEdit" android:layout_width="wrap_content" android:layout_height="44dp" android:text="Editar" />
             <Button android:id="@+id/btnText" android:layout_width="wrap_content" android:layout_height="44dp" android:text="Texto" />
             <Button android:id="@+id/btnPaste" android:layout_width="wrap_content" android:layout_height="44dp" android:text="Pegar" />
+            <Button android:id="@+id/btnSearch" android:layout_width="wrap_content" android:layout_height="44dp" android:text="Buscar" />
             <Button android:id="@+id/btnAlignLeft" android:layout_width="wrap_content" android:layout_height="44dp" android:text="Izq." />
             <Button android:id="@+id/btnAlignCenter" android:layout_width="wrap_content" android:layout_height="44dp" android:text="Centro" />
             <Button android:id="@+id/btnAlignRight" android:layout_width="wrap_content" android:layout_height="44dp" android:text="Der." />
