@@ -1,7 +1,6 @@
 package com.vaguer.pdfeditor
 
 import android.content.Intent
-import android.net.Uri
 import android.os.Bundle
 import android.widget.EditText
 import android.widget.Toast
@@ -18,7 +17,7 @@ class MainActivity : AppCompatActivity() {
 
     private val openPdf = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         uri ?: return@registerForActivityResult
-        startActivity(Intent(this, PdfEditorActivity::class.java).setData(uri))
+        startActivity(Intent(this, ModernPdfActivity::class.java).setData(uri))
     }
 
     private val mergePdfs = registerForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
@@ -84,7 +83,7 @@ class MainActivity : AppCompatActivity() {
         b.btnImages.setOnClickListener { pickImages.launch(arrayOf("image/*")) }
 
         if (intent?.action == Intent.ACTION_VIEW && intent.data != null) {
-            startActivity(Intent(this, PdfEditorActivity::class.java).setData(intent.data))
+            startActivity(Intent(this, ModernPdfActivity::class.java).setData(intent.data))
         }
     }
 
