@@ -9,11 +9,54 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:padding="8dp">
-        <Button android:id="@+id/btnPrev" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="‹" />
-        <TextView android:id="@+id/txtPage" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:text="Página 1/1" android:textStyle="bold" />
-        <Button android:id="@+id/btnNext" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="›" />
+        android:paddingStart="8dp"
+        android:paddingEnd="8dp"
+        android:paddingTop="4dp"
+        android:paddingBottom="2dp">
+        <Button
+            android:id="@+id/btnPrev"
+            android:layout_width="48dp"
+            android:layout_height="44dp"
+            android:text="‹" />
+        <TextView
+            android:id="@+id/txtPage"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:text="Página 1/1"
+            android:textStyle="bold" />
+        <Button
+            android:id="@+id/btnNext"
+            android:layout_width="48dp"
+            android:layout_height="44dp"
+            android:text="›" />
     </LinearLayout>
+
+    <HorizontalScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:fillViewport="false"
+        android:scrollbars="none">
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingStart="6dp"
+            android:paddingEnd="6dp"
+            android:paddingBottom="4dp">
+            <Button android:id="@+id/btnEdit" android:layout_width="wrap_content" android:layout_height="44dp" android:text="Editar" />
+            <Button android:id="@+id/btnText" android:layout_width="wrap_content" android:layout_height="44dp" android:text="Texto" />
+            <Button android:id="@+id/btnPaste" android:layout_width="wrap_content" android:layout_height="44dp" android:text="Pegar" />
+            <Button android:id="@+id/btnImage" android:layout_width="wrap_content" android:layout_height="44dp" android:text="Imagen/Firma" />
+            <Button android:id="@+id/btnSave" android:layout_width="wrap_content" android:layout_height="44dp" android:text="Guardar" />
+            <Button android:id="@+id/btnShare" android:layout_width="wrap_content" android:layout_height="44dp" android:text="Compartir" />
+            <Button android:id="@+id/btnWhatsApp" android:layout_width="wrap_content" android:layout_height="44dp" android:text="WhatsApp" />
+            <Button android:id="@+id/btnRotate" android:layout_width="wrap_content" android:layout_height="44dp" android:text="Rotar" />
+            <Button android:id="@+id/btnDelete" android:layout_width="wrap_content" android:layout_height="44dp" android:text="Eliminar pág." />
+            <Button android:id="@+id/btnReorder" android:layout_width="wrap_content" android:layout_height="44dp" android:text="Reordenar" />
+        </LinearLayout>
+    </HorizontalScrollView>
 
     <com.vaguer.pdfeditor.PdfPageView
         android:id="@+id/pdfView"
@@ -23,23 +66,4 @@
         android:background="#DADADA"
         android:scaleType="fitCenter" />
 
-    <HorizontalScrollView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:fillViewport="false">
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:padding="6dp">
-            <Button android:id="@+id/btnText" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Texto" />
-            <Button android:id="@+id/btnImage" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Imagen/Firma" />
-            <Button android:id="@+id/btnRotate" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Rotar" />
-            <Button android:id="@+id/btnDelete" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Eliminar pág." />
-            <Button android:id="@+id/btnReorder" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Reordenar" />
-            <Button android:id="@+id/btnSave" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Guardar como" />
-            <Button android:id="@+id/btnShare" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Compartir" />
-            <Button android:id="@+id/btnWhatsApp" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="WhatsApp" />
-        </LinearLayout>
-    </HorizontalScrollView>
 </LinearLayout>
