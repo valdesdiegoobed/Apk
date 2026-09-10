@@ -5,6 +5,7 @@ import android.graphics.Color
 import android.graphics.pdf.PdfRenderer
 import android.os.ParcelFileDescriptor
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import com.vaguer.pdfeditor.databinding.ItemLibraryPdfBinding
@@ -15,7 +16,7 @@ import java.util.concurrent.Executors
 
 class PdfLibraryAdapter(
     private val onOpen: (PdfLibraryStore.Entry) -> Unit,
-    private val onMore: (PdfLibraryStore.Entry) -> Unit
+    private val onMore: (PdfLibraryStore.Entry, View) -> Unit
 ) : RecyclerView.Adapter<PdfLibraryAdapter.Holder>() {
 
     private val all = mutableListOf<PdfLibraryStore.Entry>()
@@ -50,18 +51,19 @@ class PdfLibraryAdapter(
             b.txtPdfName.text = entry.displayName
             b.txtPdfDate.text = DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT).format(Date(entry.modified))
             b.imgPdfPreview.setImageDrawable(null)
-            b.previewPlaceholder.visibility = android.view.View.VISIBLE
+            b.previewPlaceholder.visibility = View.VISIBLE
             b.root.setOnClickListener { onOpen(entry) }
-            b.btnPdfMore.setOnClickListener { onMore(entry) }
+            b.btnPdfMore.setOnClickListener { onMore(entry, b.btnPdfMore) }
 
             val expectedPath = entry.file.absolutePath
             executor.execute {
                 val bitmap = renderThumb(entry.file)
                 b.root.post {
-                    val current = shown.getOrNull(bindingAdapterPosition)
-                    if (bindingAdapterPosition != RecyclerView.NO_POSITION && current?.file?.absolutePath == expectedPath && bitmap != null) {
+                    val pos = bindingAdapterPosition
+                    val current = if (pos == RecyclerView.NO_POSITION) null else shown.getOrNull(pos)
+                    if (current?.file?.absolutePath == expectedPath && bitmap != null) {
                         b.imgPdfPreview.setImageBitmap(bitmap)
-                        b.previewPlaceholder.visibility = android.view.View.GONE
+                        b.previewPlaceholder.visibility = View.GONE
                     }
                 }
             }
