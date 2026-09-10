@@ -40,12 +40,12 @@ jobs:
       - name: Preparar APK
         run: |
           mkdir -p entrega
-          cp pdf-vaguer/app/build/outputs/apk/debug/app-debug.apk entrega/PDF-VAGUER-1.5.0.apk
+          cp pdf-vaguer/app/build/outputs/apk/debug/app-debug.apk entrega/PDF-VAGUER-1.5.1.apk
 
       - name: Publicar APK
         uses: actions/upload-artifact@v4
         with:
-          name: PDF-VAGUER-1.5.0-Android
-          path: entrega/PDF-VAGUER-1.5.0.apk
+          name: PDF-VAGUER-1.5.1-Android
+          path: entrega/PDF-VAGUER-1.5.1.apk
           if-no-files-found: error
           retention-days: 30
