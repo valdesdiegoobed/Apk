@@ -3,6 +3,7 @@ package com.vaguer.pdfeditor
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.view.View
 import android.widget.EditText
 import android.widget.PopupMenu
 import android.widget.Toast
@@ -126,7 +127,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun refreshEmptyState(query: String) {
         libraryAdapter.filter(query)
-        b.txtEmpty.visibility = if (libraryAdapter.isEmpty()) android.view.View.VISIBLE else android.view.View.GONE
+        b.txtEmpty.visibility = if (libraryAdapter.isEmpty()) View.VISIBLE else View.GONE
     }
 
     private fun openEntry(entry: PdfLibraryStore.Entry) = openLibrary(entry.file)
@@ -145,10 +146,7 @@ class MainActivity : AppCompatActivity() {
         })
     }
 
-    private fun showEntryMenu(entry: PdfLibraryStore.Entry) {
-        val anchor = b.recyclerLibrary.findViewHolderForAdapterPosition(
-            PdfLibraryStore.list(this).indexOfFirst { it.file.absolutePath == entry.file.absolutePath }
-        )?.itemView ?: b.recyclerLibrary
+    private fun showEntryMenu(entry: PdfLibraryStore.Entry, anchor: View) {
         PopupMenu(this, anchor).apply {
             menu.add("Abrir")
             menu.add("Compartir")
