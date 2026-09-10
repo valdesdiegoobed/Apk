@@ -3,6 +3,8 @@
     <application
         android:name=".PdfVaguerApp"
         android:allowBackup="true"
+        android:icon="@drawable/ic_pdf_vaguer"
+        android:roundIcon="@drawable/ic_pdf_vaguer"
         android:label="PDF VAGUER"
         android:theme="@style/Theme.PDFVaguer">
 
