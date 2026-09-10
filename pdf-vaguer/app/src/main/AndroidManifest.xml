@@ -8,6 +8,7 @@
         android:label="PDF VAGUER"
         android:theme="@style/Theme.PDFVaguer">
 
+        <activity android:name=".ModernPdfActivity" android:screenOrientation="portrait" />
         <activity android:name=".PdfEditorActivity" android:screenOrientation="portrait" />
         <activity android:name=".MainActivity" android:exported="true">
             <intent-filter>
